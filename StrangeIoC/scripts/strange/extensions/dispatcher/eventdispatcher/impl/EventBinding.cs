@@ -107,7 +107,11 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			{
 				throw new DispatcherException ("EventDispatcher can't map something that isn't a delegate'", DispatcherExceptionType.ILLEGAL_CALLBACK_HANDLER);
 			}
-			MethodInfo methodInfo = value.Method;
+#if NETFX_CORE
+            MethodInfo methodInfo = value.GetMethodInfo();
+#else
+            MethodInfo methodInfo = value.Method;
+#endif
 			int argsLen = methodInfo.GetParameters ().Length;
 			switch(argsLen)
 			{

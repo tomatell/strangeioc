@@ -156,7 +156,9 @@ namespace strange.extensions.pool.impl
 
 					if (overflowBehavior == PoolOverflowBehavior.WARNING)
 					{
+#if !NETFX_CORE
 						Console.WriteLine ("WARNING: A pool has overflowed its limit.\n\t\tPool type: " + poolType, PoolExceptionType.OVERFLOW);
+#endif
 					}
 					return null;
 				}

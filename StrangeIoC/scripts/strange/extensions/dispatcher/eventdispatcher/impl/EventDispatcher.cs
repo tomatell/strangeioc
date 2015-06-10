@@ -210,7 +210,11 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			catch(InvalidCastException)
 			{
 				object tgt = callback.Target;
-				string methodName = (callback as Delegate).Method.Name;
+#if NETFX_CORE
+				string methodName = System.Reflection.RuntimeReflectionExtensions.GetMethodInfo(callback as Delegate).Name;
+#else
+                string methodName = (callback as Delegate).Method.Name;
+#endif
 				string message = "An EventCallback is attempting an illegal cast. One possible reason is not typing the payload to IEvent in your callback. Another is illegal casting of the data.\nTarget class: "  + tgt + " method: " + methodName;
 				throw new EventDispatcherException (message, EventDispatcherExceptionType.TARGET_INVOCATION);
 			}

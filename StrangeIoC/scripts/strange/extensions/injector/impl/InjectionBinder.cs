@@ -29,10 +29,11 @@ using strange.framework.api;
 using strange.extensions.injector.api;
 using strange.extensions.reflector.impl;
 using strange.framework.impl;
+using System.Reflection;
 
 namespace strange.extensions.injector.impl
 {
-	public class InjectionBinder : Binder, IInjectionBinder
+	public class InjectionBinder : strange.framework.impl.Binder, IInjectionBinder
 	{
 		private IInjector _injector;
 
@@ -157,7 +158,11 @@ namespace strange.extensions.injector.impl
 			foreach(Type t in list)
 			{
 				//Reflector won't permit primitive types, so screen them
-				if (t.IsPrimitive || t == typeof(Decimal) || t == typeof(string))
+#if NETFX_CORE
+				if (t.GetTypeInfo().IsPrimitive || t == typeof(Decimal) || t == typeof(string))
+#else
+                if (t.IsPrimitive || t == typeof(Decimal) || t == typeof(string))
+#endif
 				{
 					continue;
 				}

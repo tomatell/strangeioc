@@ -27,15 +27,17 @@ using System;
 using strange.extensions.mediation.api;
 using strange.framework.impl;
 using strange.framework.api;
+using System.Reflection;
 
 namespace strange.extensions.mediation.impl
 {
-	public class MediationBinding : Binding, IMediationBinding
+	public class MediationBinding : strange.framework.impl.Binding, IMediationBinding
 	{
 		protected ISemiBinding _abstraction;
 
 
-		public MediationBinding (Binder.BindingResolver resolver) : base(resolver)
+        public MediationBinding(strange.framework.impl.Binder.BindingResolver resolver)
+            : base(resolver)
 		{
 			_abstraction = new SemiBinding ();
 			_abstraction.constraint = BindingConstraintType.ONE;
@@ -52,7 +54,11 @@ namespace strange.extensions.mediation.impl
 			if (key != null)
 			{
 				Type keyType = key as Type;
-				if (abstractionType.IsAssignableFrom(keyType) == false)
+#if NETFX_CORE
+				if (abstractionType.GetTypeInfo().IsAssignableFrom(keyType.GetTypeInfo()) == false)
+#else
+                if (abstractionType.IsAssignableFrom(keyType) == false)
+#endif
 					throw new MediationException ("The View " + key.ToString() + " has been bound to the abstraction " + typeof(T).ToString() + " which the View neither extends nor implements. " , MediationExceptionType.VIEW_NOT_ASSIGNABLE);
 			}
 			_abstraction.Add (abstractionType);

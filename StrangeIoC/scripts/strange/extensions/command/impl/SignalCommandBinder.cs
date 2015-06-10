@@ -62,6 +62,7 @@ using strange.framework.api;
 using strange.extensions.injector.impl;
 using strange.extensions.signal.impl;
 using strange.extensions.signal.api;
+using System.Reflection;
 
 namespace strange.extensions.command.impl
 {
@@ -123,14 +124,26 @@ namespace strange.extensions.command.impl
 						{
 							if (value != null)
 							{
-								if (type.IsAssignableFrom(value.GetType())) //IsAssignableFrom lets us test interfaces as well
-								{
+#if NETFX_CORE
+                                Type valuetype = value.GetType();
+								if (type.GetTypeInfo().IsAssignableFrom(valuetype.GetTypeInfo())) //IsAssignableFrom lets us test interfaces as well
+                                {
 									injectionBinder.Bind(type).ToValue(value).ToInject(false);
 									injectedTypes.Add(type);
 									values.Remove(value);
 									foundValue = true;
 									break;
 								}
+#else
+                                if (type.IsAssignableFrom(value.GetType())) //IsAssignableFrom lets us test interfaces as well
+                                {
+                                    injectionBinder.Bind(type).ToValue(value).ToInject(false);
+                                    injectedTypes.Add(type);
+                                    values.Remove(value);
+                                    foundValue = true;
+                                    break;
+                                }
+#endif
 							}
 							else //Do not allow null injections
 							{

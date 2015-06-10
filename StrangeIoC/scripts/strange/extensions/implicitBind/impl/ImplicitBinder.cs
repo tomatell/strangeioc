@@ -15,6 +15,7 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -43,7 +44,11 @@ namespace strange.extensions.implicitBind.impl
 		[PostConstruct]
 		public void PostConstruct()
 		{
-			assembly = Assembly.GetExecutingAssembly();
+#if NETFX_CORE
+			assembly = typeof(Assembly).GetTypeInfo().Assembly;
+#else
+            assembly = Assembly.GetExecutingAssembly();
+#endif
 		}
 
 		/// <summary>
@@ -57,7 +62,11 @@ namespace strange.extensions.implicitBind.impl
 			if (assembly != null)
 			{
 
-				IEnumerable<Type> types = assembly.GetExportedTypes();
+#if NETFX_CORE
+                IEnumerable<Type> types = assembly.GetType().GetTypeInfo().Assembly.ExportedTypes;
+#else
+                IEnumerable<Type> types = assembly.GetExportedTypes();
+#endif
 
 				List<Type> typesInNamespaces = new List<Type>();
 				int namespacesLength = usingNamespaces.Length;
@@ -71,10 +80,29 @@ namespace strange.extensions.implicitBind.impl
 
 				foreach (Type type in typesInNamespaces)
 				{
-					object[] implements = type.GetCustomAttributes(typeof (Implements), true);
-					object[] implementedBy = type.GetCustomAttributes(typeof(ImplementedBy), true);
-					object[] mediated = type.GetCustomAttributes(typeof(MediatedBy), true);
-					object[] mediates = type.GetCustomAttributes(typeof(Mediates), true);
+#if NETFX_CORE
+                    IEnumerable implementsenum = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true);
+                    object[] implements = implementsenum.Cast<object>().ToArray();
+					//object[] implements = (type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true) as object[]);
+
+                    IEnumerable ImplementedByenum = type.GetTypeInfo().GetCustomAttributes(typeof (ImplementedBy), true);
+                    object[] implementedBy = ImplementedByenum.Cast<object>().ToArray();
+					//object[] implementedBy = (type.GetTypeInfo().GetCustomAttributes(typeof(ImplementedBy), true) as object[]);
+
+                    IEnumerable MediatedByenum = type.GetTypeInfo().GetCustomAttributes(typeof (MediatedBy), true);
+                    object[] mediated = MediatedByenum.Cast<object>().ToArray();
+					//object[] mediated = (type.GetTypeInfo().GetCustomAttributes(typeof(MediatedBy), true) as object[]);
+
+                    IEnumerable Mediatesenum = type.GetTypeInfo().GetCustomAttributes(typeof (Mediates), true);
+                    object[] mediates = Mediatesenum.Cast<object>().ToArray();
+					//object[] mediates = (type.GetTypeInfo().GetCustomAttributes(typeof(Mediates), true) as object[]);
+
+#else
+                    object[] implements = type.GetCustomAttributes(typeof(Implements), true);
+                    object[] implementedBy = type.GetCustomAttributes(typeof(ImplementedBy), true);
+                    object[] mediated = type.GetCustomAttributes(typeof(MediatedBy), true);
+                    object[] mediates = type.GetCustomAttributes(typeof(Mediates), true);
+#endif
 
 					#region Concrete and Interface Bindings
 
@@ -83,7 +111,11 @@ namespace strange.extensions.implicitBind.impl
 					{
 
 						ImplementedBy implBy = (ImplementedBy)implementedBy.First();
-						if (implBy.DefaultType.GetInterfaces().Contains(type)) //Verify this DefaultType exists and implements the tagged interface
+#if NETFX_CORE
+						if (implBy.DefaultType.GetTypeInfo().ImplementedInterfaces.Contains(type)) //Verify this DefaultType exists and implements the tagged interface
+#else
+                        if (implBy.DefaultType.GetInterfaces().Contains(type)) //Verify this DefaultType exists and implements the tagged interface
+#endif
 						{
 							implementedByBindings.Add(new ImplicitBindingVO(type, implBy.DefaultType, implBy.Scope == InjectionBindingScope.CROSS_CONTEXT, null));
 						}
@@ -97,9 +129,12 @@ namespace strange.extensions.implicitBind.impl
 
 					if (implements.Any())
 					{
-						Type[] interfaces = type.GetInterfaces();
-						
-						object name = null;
+#if NETFX_CORE
+						Type[] interfaces = (type.GetTypeInfo().ImplementedInterfaces as Type[]);
+#else
+                        Type[] interfaces = type.GetInterfaces();
+#endif
+                        object name = null;
 						bool isCrossContext = false;
 						List<Type> bindTypes = new List<Type>();
 
@@ -165,10 +200,26 @@ namespace strange.extensions.implicitBind.impl
 					#endregion
 				}
 
+#if NETFX_CORE
 				//implementedBy/interfaces first, then implements to give them priority (they will overwrite)
-				implementedByBindings.ForEach(Bind);
+                foreach (ImplicitBindingVO toBind in implementedByBindings)
+                {
+                    Bind(toBind);
+                }
+
+                
 				//Next implements tags, which have priority over interfaces
-				implementsBindings.ForEach(Bind);
+				
+                foreach (ImplicitBindingVO toBind in implementsBindings)
+                {
+                    Bind(toBind);
+                }
+#else
+                //implementedBy/interfaces first, then implements to give them priority (they will overwrite)
+                implementedByBindings.ForEach(Bind);
+                //Next implements tags, which have priority over interfaces
+                implementsBindings.ForEach(Bind);
+#endif
 			}
 			else
 			{

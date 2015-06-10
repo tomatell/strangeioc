@@ -26,6 +26,7 @@ using System;
 using strange.framework.api;
 using strange.framework.impl;
 using strange.extensions.injector.api;
+using System.Reflection;
 
 namespace strange.extensions.injector.impl
 {
@@ -109,7 +110,11 @@ namespace strange.extensions.injector.impl
 			{
 				object aKey = keys[a];
 				Type keyType = (aKey is Type) ? aKey as Type : aKey.GetType();
-				if (keyType.IsAssignableFrom(objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
+#if NETFX_CORE
+				if (keyType.GetTypeInfo().IsAssignableFrom(objType.GetTypeInfo()) == false && (HasGenericAssignableFrom(keyType, objType) == false))
+#else
+                if (keyType.IsAssignableFrom(objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
+#endif
 				{
 					throw new InjectionException("Injection cannot bind a value that does not extend or implement the binding type.", InjectionExceptionType.ILLEGAL_BINDING_VALUE);
 				}
@@ -121,7 +126,11 @@ namespace strange.extensions.injector.impl
 		protected bool HasGenericAssignableFrom(Type keyType, Type objType)
 		{
 			//FIXME: We need to figure out how to determine generic assignability
-			if (keyType.IsGenericType == false)
+#if NETFX_CORE
+			if (keyType.GetTypeInfo().IsGenericType == false)
+#else
+            if (keyType.IsGenericType == false)
+#endif
 				return false;
 
 			return true;
@@ -129,18 +138,34 @@ namespace strange.extensions.injector.impl
 
 		protected bool IsGenericTypeAssignable(Type givenType, Type genericType)
 		{
-			var interfaceTypes = givenType.GetInterfaces();
+#if NETFX_CORE
+			var interfaceTypes = givenType.GetTypeInfo().ImplementedInterfaces;
+#else
+            var interfaceTypes = givenType.GetInterfaces();
+#endif
 
 			foreach (var it in interfaceTypes)
 			{
-				if (it.IsGenericType && it.GetGenericTypeDefinition() == genericType)
+#if NETFX_CORE
+				if (it.GetTypeInfo().IsGenericType && it.GetTypeInfo().GetGenericTypeDefinition() == genericType)
+#else
+                if (it.IsGenericType && it.GetGenericTypeDefinition() == genericType)
+#endif
 					return true;
 			}
 
-			if (givenType.IsGenericType && givenType.GetGenericTypeDefinition() == genericType)
+#if NETFX_CORE
+			if (givenType.GetTypeInfo().IsGenericType && givenType.GetTypeInfo().GetGenericTypeDefinition() == genericType)
+#else
+            if (givenType.IsGenericType && givenType.GetGenericTypeDefinition() == genericType)
+#endif
 				return true;
 
-			Type baseType = givenType.BaseType;
+#if NETFX_CORE
+			Type baseType = givenType.GetTypeInfo().BaseType;
+#else
+            Type baseType = givenType.BaseType;
+#endif
 			if (baseType == null) return false;
 
 			return IsGenericTypeAssignable(baseType, genericType);

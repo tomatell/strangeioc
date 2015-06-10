@@ -91,13 +91,18 @@ namespace strange.extensions.reflector.impl
 			{
 				Type paramType = param.ParameterType;
 				paramList [i] = paramType;
+#if NETFX_CORE
+				IEnumerable attributes = param.GetCustomAttributes(typeof(Name), false);
 
-				object[] attributes = param.GetCustomAttributes(typeof(Name), false);
-				if (attributes.Length > 0) 
-				{
-					names[i] = ( (Name)attributes[0]).name;
-				}
-				i++;
+#else
+                object[] attributes = param.GetCustomAttributes(typeof(Name), false);
+
+                if (attributes.Length > 0)
+                {
+                    names[i] = ((Name)attributes[0]).name;
+                }
+                i++;
+#endif
 			}
 			reflected.Constructor = constructor;
 			reflected.ConstructorParameters = paramList;
@@ -110,10 +115,17 @@ namespace strange.extensions.reflector.impl
 		//3. The constructor with the fewest parameters
 		private ConstructorInfo findPreferredConstructor(Type type)
 		{
-			ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy | 
-			                                                            BindingFlags.Public | 
-			                                                            BindingFlags.Instance |
-			                                                            BindingFlags.InvokeMethod);
+#if NETFX_CORE
+            IEnumerable constructors = type.GetTypeInfo().DeclaredConstructors;
+            //ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
+
+#else
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
+                                                                        BindingFlags.Public |
+                                                                        BindingFlags.Instance |
+                                                                        BindingFlags.InvokeMethod);
+
+#endif
 			if (constructors.Length == 1)
 			{
 				return constructors [0];
