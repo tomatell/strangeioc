@@ -37,7 +37,8 @@ namespace strange.extensions.sequencer.impl
 		{
 		}
 
-		public SequenceBinding (Binder.BindingResolver resolver) : base(resolver)
+        public SequenceBinding(strange.framework.impl.Binder.BindingResolver resolver)
+            : base(resolver)
 		{
 		}
 

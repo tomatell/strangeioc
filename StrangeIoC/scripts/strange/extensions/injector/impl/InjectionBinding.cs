@@ -36,7 +36,7 @@ namespace strange.extensions.injector.impl
 		private bool _toInject = true;
 		private bool _isCrossContext = false;
 
-		public InjectionBinding (Binder.BindingResolver resolver)
+        public InjectionBinding(strange.framework.impl.Binder.BindingResolver resolver)
 		{
 			this.resolver = resolver;
 			keyConstraint = BindingConstraintType.MANY;
