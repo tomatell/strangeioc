@@ -30,6 +30,7 @@ using strange.extensions.reflector.api;
 using strange.framework.api;
 using strange.framework.impl;
 using System.Collections;
+using System.Linq;
 
 namespace strange.extensions.reflector.impl
 {
@@ -93,6 +94,10 @@ namespace strange.extensions.reflector.impl
 				paramList [i] = paramType;
 #if NETFX_CORE
 				IEnumerable attributes = param.GetCustomAttributes(typeof(Name), false);
+                foreach( var name in attributes ) {
+                    names[i] = (Name)name;
+                }
+                i++;
 
 #else
                 object[] attributes = param.GetCustomAttributes(typeof(Name), false);
@@ -116,8 +121,8 @@ namespace strange.extensions.reflector.impl
 		private ConstructorInfo findPreferredConstructor(Type type)
 		{
 #if NETFX_CORE
-            IEnumerable constructors = type.GetTypeInfo().DeclaredConstructors;
-            //ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
+            IEnumerable constructorsquery = type.GetTypeInfo().DeclaredConstructors;
+            ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -135,7 +140,15 @@ namespace strange.extensions.reflector.impl
 			ConstructorInfo shortestConstructor = null;
 			foreach (ConstructorInfo constructor in constructors)
 			{
-				object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
+#if NETFX_CORE
+                IEnumerable taggedConstructorsquery = constructor.GetCustomAttributes(typeof(Construct), true);
+
+                IEnumerable<Construct> ii = taggedConstructorsquery.OfType<Construct>();
+                object[] taggedConstructors = ConvertListToObject<Construct>(ii);
+#else
+                object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
+
+#endif
 				if (taggedConstructors.Length > 0)
 				{
 					return constructor;
@@ -152,14 +165,28 @@ namespace strange.extensions.reflector.impl
 
 		private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
 		{
-			MethodInfo[] methods = type.GetMethods(BindingFlags.FlattenHierarchy | 
-			                                             BindingFlags.Public | 
-			                                             BindingFlags.Instance |
-			                                             BindingFlags.InvokeMethod);
+#if NETFX_CORE
+            IEnumerable methods = type.GetTypeInfo().DeclaredMethods;
+
+
+#else
+            MethodInfo[] methods = type.GetMethods(BindingFlags.FlattenHierarchy |
+                                                         BindingFlags.Public |
+                                                         BindingFlags.Instance |
+                                                         BindingFlags.InvokeMethod);
+#endif
 			ArrayList methodList = new ArrayList ();
 			foreach (MethodInfo method in methods)
 			{
-				object[] tagged = method.GetCustomAttributes (typeof(PostConstruct), true);
+#if NETFX_CORE
+
+                IEnumerable taggedquery = method.GetCustomAttributes(typeof(PostConstruct), true);
+                IEnumerable<PostConstruct> ii = taggedquery.OfType<PostConstruct>();
+                object[] tagged = ConvertListToObject<PostConstruct>(ii);
+#else
+                object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
+
+#endif
 				if (tagged.Length > 0)
 				{
 					methodList.Add (method);
@@ -171,36 +198,69 @@ namespace strange.extensions.reflector.impl
 			reflected.postConstructors = postConstructors;
 		}
 
-		private void mapSetters(IReflectedClass reflected, IBinding binding, Type type)
+#if NETFX_CORE
+        bool HasPublicGetter(PropertyInfo pi)
+        {
+            if (!pi.CanRead)
+                return false;
+            MethodInfo getter = pi.GetMethod;
+            return getter.IsPublic;
+        }
+#endif
+
+        private void mapSetters(IReflectedClass reflected, IBinding binding, Type type)
 		{
 			KeyValuePair<Type, PropertyInfo>[] pairs = new KeyValuePair<Type, PropertyInfo>[0];
 			object[] names = new object[0];
 
-			MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
-			                                        BindingFlags.FlattenHierarchy | 
-			                                        BindingFlags.SetProperty | 
-			                                        BindingFlags.NonPublic | 
-			                                        BindingFlags.Instance, 
-			                                        null, null);
+#if NETFX_CORE
+            IEnumerable privateMembers = type.GetTypeInfo().DeclaredMembers;
+#else
+            MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
+                                                    BindingFlags.FlattenHierarchy |
+                                                    BindingFlags.SetProperty |
+                                                    BindingFlags.NonPublic |
+                                                    BindingFlags.Instance,
+                                                    null, null);
+#endif
 			foreach (MemberInfo member in privateMembers)
 			{
-				object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+#if NETFX_CORE
+                IEnumerable injectionsquery = member.GetCustomAttributes(typeof(Inject), true);
+                IEnumerable<Inject> ii = injectionsquery.OfType<Inject>();
+                object[] injections = ConvertListToObject<Inject>(ii);
+#else
+                object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+
+#endif
 				if (injections.Length > 0)
 				{
 					throw new ReflectionException ("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
 				}
 			}
 
-			MemberInfo[] members = type.FindMembers(MemberTypes.Property,
-			                                              BindingFlags.FlattenHierarchy | 
-			                                              BindingFlags.SetProperty | 
-			                                              BindingFlags.Public | 
-			                                              BindingFlags.Instance, 
-			                                              null, null);
+#if NETFX_CORE
+            IEnumerable members = type.GetTypeInfo().DeclaredMembers;
+
+#else
+            MemberInfo[] members = type.FindMembers(MemberTypes.Property,
+                                                          BindingFlags.FlattenHierarchy |
+                                                          BindingFlags.SetProperty |
+                                                          BindingFlags.Public |
+                                                          BindingFlags.Instance,
+                                                          null, null);
+#endif
 
 			foreach (MemberInfo member in members)
 			{
-				object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+#if NETFX_CORE
+                IEnumerable injectionsquery = member.GetCustomAttributes(typeof(Inject), true);
+                IEnumerable<Inject> ii = injectionsquery.OfType<Inject>();
+                object[] injections = ConvertListToObject<Inject>(ii);
+#else
+                object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+
+#endif
 				if (injections.Length > 0)
 				{
 					Inject attr = injections [0] as Inject;
@@ -242,10 +302,68 @@ namespace strange.extensions.reflector.impl
 			list [len] = value;
 			return list;
 		}
+
+        public object[] ToArray(IEnumerable<object> myEnumerable)
+        {
+            return new Buffer<object>(myEnumerable).ToArray();
+        }
+
+        public MemberInfo[] ToMemberInfoArray(IEnumerable<MemberInfo> myEnumerable)
+        {
+            return new Buffer<MemberInfo>(myEnumerable).ToArray();
+        }
+
+        public MethodInfo[] ToMethodInfoArray(IEnumerable<MethodInfo> myEnumerable)
+        {
+            return new Buffer<MethodInfo>(myEnumerable).ToArray();
+        }
+
+        public ConstructorInfo[] ToConstructorInfoArray(IEnumerable<ConstructorInfo> myEnumerable)
+        {
+            return new Buffer<ConstructorInfo>(myEnumerable).ToArray();
+        }
+
+        public object[] ConvertListToObject<T>(IEnumerable<T> DataSource)
+        {
+            int rows = DataSource.Count();
+
+            //Create object array with rows/cols
+            object[] excelarray = new object[rows];
+            int i = 0;
+            foreach (T data in DataSource) //Outer loop
+            {
+                //for (int j = 0; j < cols; j++) //Inner loop
+                //{
+                //    excelarray[i, j] = propertyInfos[j].GetValue(data, null);
+                //}
+                excelarray[i] = data;
+                i++;
+            }
+            return excelarray;
+        }
+	}
 	}
 
 	class PriorityComparer : IComparer
 	{
+        public object[] ConvertListToObject<T>(IEnumerable<T> DataSource)
+        {
+            int rows = DataSource.Count();
+
+            //Create object array with rows/cols
+            object[] excelarray = new object[rows];
+            int i = 0;
+            foreach (T data in DataSource) //Outer loop
+            {
+                //for (int j = 0; j < cols; j++) //Inner loop
+                //{
+                //    excelarray[i, j] = propertyInfos[j].GetValue(data, null);
+                //}
+                excelarray[i] = data;
+                i++;
+            }
+            return excelarray;
+        }
 		int IComparer.Compare( Object x, Object y )
 		{
 
@@ -257,10 +375,81 @@ namespace strange.extensions.reflector.impl
 
 		private int getPriority(MethodInfo methodInfo)
 		{
-			PostConstruct attr = methodInfo.GetCustomAttributes(true) [0] as PostConstruct;
+#if NETFX_CORE
+            IEnumerable attrquery = methodInfo.GetCustomAttributes(typeof(PostConstruct), true);
+            IEnumerable<PostConstruct> pi = attrquery.OfType<PostConstruct>();
+            object[] pinjections = ConvertListToObject<PostConstruct>(pi);
+            PostConstruct attr = pinjections[0] as PostConstruct;
+
+#else
+            PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
+#endif
 			int priority = attr.priority;
 			return priority;
 		}
+
 	}
+
+
+struct Buffer<TElement>
+{
+    internal TElement[] items;
+    internal int count;
+    internal Buffer(IEnumerable<TElement> source)
+    {
+        TElement[] array = null;
+        int num = 0;
+        ICollection<TElement> collection = source as ICollection<TElement>;
+        if (collection != null)
+        {
+            num = collection.Count;
+            if (num > 0)
+            {
+                array = new TElement[num];
+                collection.CopyTo(array, 0);
+            }
+        }
+        else
+        {
+            foreach (TElement current in source)
+            {
+                if (array == null)
+                {
+                    array = new TElement[4];
+                }
+                else
+                {
+                    if (array.Length == num)
+                    {
+                        TElement[] array2 = new TElement[checked(num * 2)];
+                        Array.Copy(array, 0, array2, 0, num);
+                        array = array2;
+                    }
+                }
+                array[num] = current;
+                num++;
+            }
+        }
+        this.items = array;
+        this.count = num;
+    }
+    public TElement[] ToArray()
+    {
+        if (this.count == 0)
+        {
+            return new TElement[0];
+        }
+        if (this.items.Length == this.count)
+        {
+            return this.items;
+        }
+        TElement[] array = new TElement[this.count];
+        Array.Copy(this.items, 0, array, 0, this.count);
+        return array;
+    }
+
+    
 }
+
+
 
