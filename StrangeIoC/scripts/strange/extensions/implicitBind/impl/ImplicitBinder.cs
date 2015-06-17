@@ -81,21 +81,13 @@ namespace strange.extensions.implicitBind.impl
 				foreach (Type type in typesInNamespaces)
 				{
 #if NETFX_CORE
-                    IEnumerable implementsenum = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true);
-                    object[] implements = implementsenum.Cast<object>().ToArray();
-					//object[] implements = (type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true) as object[]);
+                    object[] implements = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true).Cast<object>().ToArray();
 
-                    IEnumerable ImplementedByenum = type.GetTypeInfo().GetCustomAttributes(typeof (ImplementedBy), true);
-                    object[] implementedBy = ImplementedByenum.Cast<object>().ToArray();
-					//object[] implementedBy = (type.GetTypeInfo().GetCustomAttributes(typeof(ImplementedBy), true) as object[]);
+                    object[] implementedBy = type.GetTypeInfo().GetCustomAttributes(typeof (ImplementedBy), true).Cast<object>().ToArray();
 
-                    IEnumerable MediatedByenum = type.GetTypeInfo().GetCustomAttributes(typeof (MediatedBy), true);
-                    object[] mediated = MediatedByenum.Cast<object>().ToArray();
-					//object[] mediated = (type.GetTypeInfo().GetCustomAttributes(typeof(MediatedBy), true) as object[]);
+                    object[] mediated = type.GetTypeInfo().GetCustomAttributes(typeof (MediatedBy), true).Cast<object>().ToArray();
 
-                    IEnumerable Mediatesenum = type.GetTypeInfo().GetCustomAttributes(typeof (Mediates), true);
-                    object[] mediates = Mediatesenum.Cast<object>().ToArray();
-					//object[] mediates = (type.GetTypeInfo().GetCustomAttributes(typeof(Mediates), true) as object[]);
+                    object[] mediates = type.GetTypeInfo().GetCustomAttributes(typeof (Mediates), true).Cast<object>().ToArray();
 
 #else
                     object[] implements = type.GetCustomAttributes(typeof(Implements), true);

@@ -93,11 +93,7 @@ namespace strange.extensions.reflector.impl
 				Type paramType = param.ParameterType;
 				paramList [i] = paramType;
 #if NETFX_CORE
-				IEnumerable attributes = param.GetCustomAttributes(typeof(Name), false);
-                foreach( var name in attributes ) {
-                    names[i] = (Name)name;
-                }
-                i++;
+				object[] attributes = param.GetCustomAttributes(typeof(Name), false).Cast<object>().ToArray();
 
 #else
                 object[] attributes = param.GetCustomAttributes(typeof(Name), false);
@@ -121,8 +117,18 @@ namespace strange.extensions.reflector.impl
 		private ConstructorInfo findPreferredConstructor(Type type)
 		{
 #if NETFX_CORE
-            IEnumerable constructorsquery = type.GetTypeInfo().DeclaredConstructors;
-            ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
+            IEnumerable<ConstructorInfo> constructorsquery = from c in type.GetTypeInfo().DeclaredConstructors where c.IsPublic select c;
+            ConstructorInfo[] constructors = new ConstructorInfo[constructorsquery.Count()];
+
+                var enumerator = constructorsquery.GetEnumerator();
+                List<ConstructorInfo> list = new List<ConstructorInfo>();
+                
+                while (enumerator.MoveNext())
+                {
+                    list.Add(enumerator.Current);
+                }
+      
+                list.CopyTo(constructors);
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -141,16 +147,13 @@ namespace strange.extensions.reflector.impl
 			foreach (ConstructorInfo constructor in constructors)
 			{
 #if NETFX_CORE
-                IEnumerable taggedConstructorsquery = constructor.GetCustomAttributes(typeof(Construct), true);
-
-                IEnumerable<Construct> ii = taggedConstructorsquery.OfType<Construct>();
-                object[] taggedConstructors = ConvertListToObject<Construct>(ii);
+                object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true).Cast<object>().ToArray();
 #else
                 object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
 
 #endif
-				if (taggedConstructors.Length > 0)
-				{
+                if (taggedConstructors.Length > 0)
+                {
 					return constructor;
 				}
 				len = constructor.GetParameters ().Length;
@@ -166,7 +169,7 @@ namespace strange.extensions.reflector.impl
 		private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
 		{
 #if NETFX_CORE
-            IEnumerable methods = type.GetTypeInfo().DeclaredMethods;
+            IEnumerable<MethodInfo> methods = from m in type.GetTypeInfo().DeclaredMethods where m.IsPublic select m;;
 
 
 #else
@@ -180,15 +183,13 @@ namespace strange.extensions.reflector.impl
 			{
 #if NETFX_CORE
 
-                IEnumerable taggedquery = method.GetCustomAttributes(typeof(PostConstruct), true);
-                IEnumerable<PostConstruct> ii = taggedquery.OfType<PostConstruct>();
-                object[] tagged = ConvertListToObject<PostConstruct>(ii);
+                object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true).Cast<object>().ToArray();
 #else
                 object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
 
 #endif
-				if (tagged.Length > 0)
-				{
+                if (tagged.Length > 0)
+                {
 					methodList.Add (method);
 				}
 			}
@@ -214,7 +215,7 @@ namespace strange.extensions.reflector.impl
 			object[] names = new object[0];
 
 #if NETFX_CORE
-            IEnumerable privateMembers = type.GetTypeInfo().DeclaredMembers;
+            IEnumerable<MemberInfo> privateMembers = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -226,21 +227,21 @@ namespace strange.extensions.reflector.impl
 			foreach (MemberInfo member in privateMembers)
 			{
 #if NETFX_CORE
-                IEnumerable injectionsquery = member.GetCustomAttributes(typeof(Inject), true);
-                IEnumerable<Inject> ii = injectionsquery.OfType<Inject>();
-                object[] injections = ConvertListToObject<Inject>(ii);
+                object[] injections = member.GetCustomAttributes(typeof(Inject), true).Cast<object>().ToArray();
+
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
 
+
 #endif
-				if (injections.Length > 0)
-				{
+                if (injections.Length > 0)
+                {
 					throw new ReflectionException ("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
 				}
 			}
 
 #if NETFX_CORE
-            IEnumerable members = type.GetTypeInfo().DeclaredMembers;
+            IEnumerable<MemberInfo> members = type.GetTypeInfo().DeclaredMembers;
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -254,15 +255,15 @@ namespace strange.extensions.reflector.impl
 			foreach (MemberInfo member in members)
 			{
 #if NETFX_CORE
-                IEnumerable injectionsquery = member.GetCustomAttributes(typeof(Inject), true);
-                IEnumerable<Inject> ii = injectionsquery.OfType<Inject>();
-                object[] injections = ConvertListToObject<Inject>(ii);
+                object[] injections = member.GetCustomAttributes(typeof(Inject), true).Cast<object>().ToArray();
+
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
 
+
 #endif
-				if (injections.Length > 0)
-				{
+                if (injections.Length > 0)
+                {
 					Inject attr = injections [0] as Inject;
 					PropertyInfo point = member as PropertyInfo;
 					Type pointType = point.PropertyType;
