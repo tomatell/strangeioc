@@ -241,7 +241,7 @@ namespace strange.extensions.reflector.impl
 			}
 
 #if NETFX_CORE
-            IEnumerable<MemberInfo> members = type.GetTypeInfo().DeclaredMembers;
+            IEnumerable<MemberInfo> members = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -303,68 +303,11 @@ namespace strange.extensions.reflector.impl
 			list [len] = value;
 			return list;
 		}
-
-        public object[] ToArray(IEnumerable<object> myEnumerable)
-        {
-            return new Buffer<object>(myEnumerable).ToArray();
-        }
-
-        public MemberInfo[] ToMemberInfoArray(IEnumerable<MemberInfo> myEnumerable)
-        {
-            return new Buffer<MemberInfo>(myEnumerable).ToArray();
-        }
-
-        public MethodInfo[] ToMethodInfoArray(IEnumerable<MethodInfo> myEnumerable)
-        {
-            return new Buffer<MethodInfo>(myEnumerable).ToArray();
-        }
-
-        public ConstructorInfo[] ToConstructorInfoArray(IEnumerable<ConstructorInfo> myEnumerable)
-        {
-            return new Buffer<ConstructorInfo>(myEnumerable).ToArray();
-        }
-
-        public object[] ConvertListToObject<T>(IEnumerable<T> DataSource)
-        {
-            int rows = DataSource.Count();
-
-            //Create object array with rows/cols
-            object[] excelarray = new object[rows];
-            int i = 0;
-            foreach (T data in DataSource) //Outer loop
-            {
-                //for (int j = 0; j < cols; j++) //Inner loop
-                //{
-                //    excelarray[i, j] = propertyInfos[j].GetValue(data, null);
-                //}
-                excelarray[i] = data;
-                i++;
-            }
-            return excelarray;
-        }
 	}
-	}
+}
 
 	class PriorityComparer : IComparer
 	{
-        public object[] ConvertListToObject<T>(IEnumerable<T> DataSource)
-        {
-            int rows = DataSource.Count();
-
-            //Create object array with rows/cols
-            object[] excelarray = new object[rows];
-            int i = 0;
-            foreach (T data in DataSource) //Outer loop
-            {
-                //for (int j = 0; j < cols; j++) //Inner loop
-                //{
-                //    excelarray[i, j] = propertyInfos[j].GetValue(data, null);
-                //}
-                excelarray[i] = data;
-                i++;
-            }
-            return excelarray;
-        }
 		int IComparer.Compare( Object x, Object y )
 		{
 
@@ -377,13 +320,10 @@ namespace strange.extensions.reflector.impl
 		private int getPriority(MethodInfo methodInfo)
 		{
 #if NETFX_CORE
-            IEnumerable attrquery = methodInfo.GetCustomAttributes(typeof(PostConstruct), true);
-            IEnumerable<PostConstruct> pi = attrquery.OfType<PostConstruct>();
-            object[] pinjections = ConvertListToObject<PostConstruct>(pi);
-            PostConstruct attr = pinjections[0] as PostConstruct;
+            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).Cast<object>().ToArray()[0] as PostConstruct;
 
 #else
-            PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
+        PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
 #endif
 			int priority = attr.priority;
 			return priority;
@@ -391,66 +331,6 @@ namespace strange.extensions.reflector.impl
 
 	}
 
-
-struct Buffer<TElement>
-{
-    internal TElement[] items;
-    internal int count;
-    internal Buffer(IEnumerable<TElement> source)
-    {
-        TElement[] array = null;
-        int num = 0;
-        ICollection<TElement> collection = source as ICollection<TElement>;
-        if (collection != null)
-        {
-            num = collection.Count;
-            if (num > 0)
-            {
-                array = new TElement[num];
-                collection.CopyTo(array, 0);
-            }
-        }
-        else
-        {
-            foreach (TElement current in source)
-            {
-                if (array == null)
-                {
-                    array = new TElement[4];
-                }
-                else
-                {
-                    if (array.Length == num)
-                    {
-                        TElement[] array2 = new TElement[checked(num * 2)];
-                        Array.Copy(array, 0, array2, 0, num);
-                        array = array2;
-                    }
-                }
-                array[num] = current;
-                num++;
-            }
-        }
-        this.items = array;
-        this.count = num;
-    }
-    public TElement[] ToArray()
-    {
-        if (this.count == 0)
-        {
-            return new TElement[0];
-        }
-        if (this.items.Length == this.count)
-        {
-            return this.items;
-        }
-        TElement[] array = new TElement[this.count];
-        Array.Copy(this.items, 0, array, 0, this.count);
-        return array;
-    }
-
-    
-}
 
 
 
