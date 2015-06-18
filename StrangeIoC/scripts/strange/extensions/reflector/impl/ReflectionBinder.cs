@@ -118,17 +118,7 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             IEnumerable<ConstructorInfo> constructorsquery = from c in type.GetTypeInfo().DeclaredConstructors where c.IsPublic select c;
-            ConstructorInfo[] constructors = new ConstructorInfo[constructorsquery.Count()];
-
-                var enumerator = constructorsquery.GetEnumerator();
-                List<ConstructorInfo> list = new List<ConstructorInfo>();
-                
-                while (enumerator.MoveNext())
-                {
-                    list.Add(enumerator.Current);
-                }
-      
-                list.CopyTo(constructors);
+            ConstructorInfo[] constructors = constructorsquery.ToArray();
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -169,7 +159,8 @@ namespace strange.extensions.reflector.impl
 		private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
 		{
 #if NETFX_CORE
-            IEnumerable<MethodInfo> methods = from m in type.GetTypeInfo().DeclaredMethods where m.IsPublic select m;;
+            IEnumerable<MethodInfo> methodsquery = from m in type.GetTypeInfo().DeclaredMethods where m.IsPublic select m;
+            MethodInfo[] methods = methodsquery.ToArray();
 
 
 #else
@@ -215,7 +206,8 @@ namespace strange.extensions.reflector.impl
 			object[] names = new object[0];
 
 #if NETFX_CORE
-            IEnumerable<MemberInfo> privateMembers = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
+            IEnumerable<MemberInfo> privateMembersqyery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
+            MemberInfo[] privateMembers = privateMembersqyery.ToArray();
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -241,7 +233,8 @@ namespace strange.extensions.reflector.impl
 			}
 
 #if NETFX_CORE
-            IEnumerable<MemberInfo> members = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
+            IEnumerable<MemberInfo> membersquery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
+            MemberInfo[] members = membersquery.ToArray();
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -320,7 +313,7 @@ namespace strange.extensions.reflector.impl
 		private int getPriority(MethodInfo methodInfo)
 		{
 #if NETFX_CORE
-            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).Cast<object>().ToArray()[0] as PostConstruct;
+            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).Cast<PostConstruct>().ToArray()[0] as PostConstruct;
 
 #else
         PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
