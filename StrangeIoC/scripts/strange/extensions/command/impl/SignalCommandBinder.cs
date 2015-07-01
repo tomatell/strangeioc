@@ -183,6 +183,28 @@ namespace strange.extensions.command.impl
 			return base.Bind(signal);
 		}
 
+        // Follow the same code of SignalCommandBinder.Bind<T> but do it manually since we are using Reflection.
+        override public ICommandBinding Bind(object value)
+        {
+            var type = value as Type;
+            if (type != null)
+            {
+                IInjectionBinding binding = injectionBinder.GetBinding(type);
+                //If this isn't injected yet, inject a new one as a singleton
+                if (binding == null)
+                {
+                    injectionBinder.Bind(type).ToSingleton();
+                }
+
+                var signal = injectionBinder.GetInstance(type);
+                return base.Bind(signal);
+            }
+            else
+            {
+                return base.Bind(value);
+            }
+        }
+
 		/// <summary>Unbind by Signal Type</summary>
 		/// <exception cref="InjectionException">If there is no binding for this type.</exception>
 		public override void Unbind<T>()
