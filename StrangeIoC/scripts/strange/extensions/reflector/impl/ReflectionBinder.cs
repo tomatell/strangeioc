@@ -119,7 +119,7 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             IEnumerable<ConstructorInfo> constructorsquery = type.GetTypeInfo().DeclaredConstructors.Where(m => m.IsPublic);
-            ConstructorInfo[] constructors = constructorsquery.ToArray();
+            ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
             System.Diagnostics.Debug.WriteLine("constructors: "+constructors);
 
 #else
@@ -163,7 +163,7 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             IEnumerable<MethodInfo> methodsquery = type.GetTypeInfo().DeclaredMethods.Where(m => m.IsPublic);
-            MethodInfo[] methods = (MethodInfo[])(methodsquery);
+            MethodInfo[] methods = methodsquery.Cast<MethodInfo>().ToArray();
              System.Diagnostics.Debug.WriteLine("methods: "+methods);
 
 
@@ -212,7 +212,7 @@ namespace strange.extensions.reflector.impl
 
 #if NETFX_CORE
             IEnumerable<MemberInfo> privateMembersqyery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where !m.IsPublic select m;
-            MemberInfo[] privateMembers = (MemberInfo[])(privateMembersqyery);
+            MemberInfo[] privateMembers = privateMembersqyery.Cast<MemberInfo>().ToArray();
             System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers);
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
