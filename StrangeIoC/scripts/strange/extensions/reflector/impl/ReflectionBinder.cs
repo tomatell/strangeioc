@@ -94,7 +94,7 @@ namespace strange.extensions.reflector.impl
 				paramList [i] = paramType;
 #if NETFX_CORE
 				object[] attributes = (Object[])(param.GetCustomAttributes(typeof(Name), false));
-                 System.Diagnostics.Debug.WriteLine("attributes: "+attributes);
+                 System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToString());
 
 #else
                 object[] attributes = param.GetCustomAttributes(typeof(Name), false);
@@ -119,8 +119,9 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             IEnumerable<ConstructorInfo> constructorsquery = type.GetTypeInfo().DeclaredConstructors.Where(m => m.IsPublic);
-            ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
-            System.Diagnostics.Debug.WriteLine("constructors: "+constructors);
+            //ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
+            ConstructorInfo[] constructors = (ConstructorInfo[])constructorsquery.ToArray();
+            System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToString());
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -140,7 +141,7 @@ namespace strange.extensions.reflector.impl
 			{
 #if NETFX_CORE
                 object[] taggedConstructors = (Object[])(constructor.GetCustomAttributes(typeof(Construct), true));
-                 System.Diagnostics.Debug.WriteLine("taggedConstructors: "+taggedConstructors);
+                 System.Diagnostics.Debug.WriteLine("taggedConstructors: "+taggedConstructors.ToString());
 #else
                 object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
 
@@ -163,8 +164,9 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             IEnumerable<MethodInfo> methodsquery = type.GetTypeInfo().DeclaredMethods.Where(m => m.IsPublic);
-            MethodInfo[] methods = methodsquery.Cast<MethodInfo>().ToArray();
-             System.Diagnostics.Debug.WriteLine("methods: "+methods);
+            //MethodInfo[] methods = methodsquery.Cast<MethodInfo>().ToArray();
+            MethodInfo[] methods = (MethodInfo[])methodsquery.ToArray();
+             System.Diagnostics.Debug.WriteLine("methods: "+methods.ToString());
 
 
 #else
@@ -179,7 +181,7 @@ namespace strange.extensions.reflector.impl
 #if NETFX_CORE
 
                 object[] tagged = (Object[])(method.GetCustomAttributes(typeof(PostConstruct), true));
-                 System.Diagnostics.Debug.WriteLine("tagged : "+tagged);
+                 System.Diagnostics.Debug.WriteLine("tagged : "+tagged.ToString());
 #else
                 object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
 
@@ -212,8 +214,9 @@ namespace strange.extensions.reflector.impl
 
 #if NETFX_CORE
             IEnumerable<MemberInfo> privateMembersqyery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where !m.IsPublic select m;
-            MemberInfo[] privateMembers = privateMembersqyery.Cast<MemberInfo>().ToArray();
-            System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers);
+            //MemberInfo[] privateMembers = privateMembersqyery.Cast<MemberInfo>().ToArray();
+            MemberInfo[] privateMembers = (MemberInfo[])privateMembersqyery.ToArray();
+            System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers.ToString());
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -241,7 +244,9 @@ namespace strange.extensions.reflector.impl
 
 #if NETFX_CORE
             IEnumerable<MemberInfo> membersquery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
-            MemberInfo[] members = membersquery.Cast<MemberInfo>().ToArray();
+            //MemberInfo[] members = membersquery.Cast<MemberInfo>().ToArray();
+            MemberInfo[] members = (MemberInfo[])membersquery.ToArray();
+            System.Diagnostics.Debug.WriteLine("members: "+members.ToString());
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -254,9 +259,11 @@ namespace strange.extensions.reflector.impl
 
 			foreach (MemberInfo member in members)
 			{
+                //System.Diagnostics.Debug.WriteLine("member: " + member);
 #if NETFX_CORE
+                System.Diagnostics.Debug.WriteLine("InjectMember: " + member.GetCustomAttributes(typeof(Inject), true));
                 object[] injections = (Object[])(member.GetCustomAttributes(typeof(Inject), true));
-                System.Diagnostics.Debug.WriteLine("injections: "+injections);
+                System.Diagnostics.Debug.WriteLine("injections: "+injections.ToString());
 
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
@@ -322,7 +329,7 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().First<PostConstruct>();
-            System.Diagnostics.Debug.WriteLine("attr: " + attr);
+            System.Diagnostics.Debug.WriteLine("attr: " + attr.ToString());
 
 #else
         PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
