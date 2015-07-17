@@ -93,8 +93,9 @@ namespace strange.extensions.reflector.impl
 				Type paramType = param.ParameterType;
 				paramList [i] = paramType;
 #if NETFX_CORE
-				object[] attributes = (Object[])(param.GetCustomAttributes(typeof(Name), false));
-                 System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToString());
+				object[] attributes = (object[])(param.GetCustomAttributes(typeof(Name), false));
+                //System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToString());
+                //System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToArray().GetValue(0).ToString());
 
 #else
                 object[] attributes = param.GetCustomAttributes(typeof(Name), false);
@@ -103,6 +104,7 @@ namespace strange.extensions.reflector.impl
                 if (attributes.Length > 0)
                 {
                     names[i] = ((Name)attributes[0]).name;
+                    System.Diagnostics.Debug.WriteLine("attributes: " + names[i].ToString());
                 }
                 i++;
             }
@@ -118,10 +120,11 @@ namespace strange.extensions.reflector.impl
 		private ConstructorInfo findPreferredConstructor(Type type)
 		{
 #if NETFX_CORE
-            IEnumerable<ConstructorInfo> constructorsquery = type.GetTypeInfo().DeclaredConstructors.Where(m => m.IsPublic);
-            //ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
-            ConstructorInfo[] constructors = (ConstructorInfo[])constructorsquery.ToArray();
-            System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToString());
+            IEnumerable constructorsquery = type.GetTypeInfo().DeclaredConstructors.Where(m => m.IsPublic);
+            ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
+            //ConstructorInfo[] constructors = (ConstructorInfo[])constructorsquery.ToArray();
+            //System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToString());
+            //System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToArray().GetValue(1).ToString());
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -132,7 +135,8 @@ namespace strange.extensions.reflector.impl
 #endif
 			if (constructors.Length == 1)
 			{
-				return constructors [0];
+                System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0].ToString());
+                return constructors [0];
 			}
 			int len;
 			int shortestLen = int.MaxValue;
@@ -141,14 +145,16 @@ namespace strange.extensions.reflector.impl
 			{
 #if NETFX_CORE
                 object[] taggedConstructors = (Object[])(constructor.GetCustomAttributes(typeof(Construct), true));
-                 System.Diagnostics.Debug.WriteLine("taggedConstructors: "+taggedConstructors.ToString());
+                // System.Diagnostics.Debug.WriteLine("taggedConstructors: "+taggedConstructors.ToString());
+                //System.Diagnostics.Debug.WriteLine("taggedConstructors: "+taggedConstructors.ToArray().GetValue(0).ToString());
 #else
                 object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
 
 #endif
                 if (taggedConstructors.Length > 0)
                 {
-					return constructor;
+                    System.Diagnostics.Debug.WriteLine("constructor: " + constructor.ToString());
+                    return constructor;
 				}
 				len = constructor.GetParameters ().Length;
 				if (len < shortestLen)
@@ -166,7 +172,7 @@ namespace strange.extensions.reflector.impl
             IEnumerable<MethodInfo> methodsquery = type.GetTypeInfo().DeclaredMethods.Where(m => m.IsPublic);
             //MethodInfo[] methods = methodsquery.Cast<MethodInfo>().ToArray();
             MethodInfo[] methods = (MethodInfo[])methodsquery.ToArray();
-             System.Diagnostics.Debug.WriteLine("methods: "+methods.ToString());
+            //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
 
 
 #else
@@ -181,14 +187,16 @@ namespace strange.extensions.reflector.impl
 #if NETFX_CORE
 
                 object[] tagged = (Object[])(method.GetCustomAttributes(typeof(PostConstruct), true));
-                 System.Diagnostics.Debug.WriteLine("tagged : "+tagged.ToString());
+                // System.Diagnostics.Debug.WriteLine("tagged : "+tagged.ToString());
+                //System.Diagnostics.Debug.WriteLine("tagged: "+tagged.ToArray().GetValue(0).ToString());
 #else
                 object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
 
 #endif
                 if (tagged.Length > 0)
                 {
-					methodList.Add (method);
+                    System.Diagnostics.Debug.WriteLine("method: " + method.ToString());
+                    methodList.Add (method);
 				}
 			}
 
@@ -216,7 +224,8 @@ namespace strange.extensions.reflector.impl
             IEnumerable<MemberInfo> privateMembersqyery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where !m.IsPublic select m;
             //MemberInfo[] privateMembers = privateMembersqyery.Cast<MemberInfo>().ToArray();
             MemberInfo[] privateMembers = (MemberInfo[])privateMembersqyery.ToArray();
-            System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers.ToString());
+            //System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers.ToString());
+            //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -229,7 +238,8 @@ namespace strange.extensions.reflector.impl
 			{
 #if NETFX_CORE
                 object[] injections = (Object[])(member.GetCustomAttributes(typeof(Inject), true));
-                System.Diagnostics.Debug.WriteLine("injections: "+injections);
+                //System.Diagnostics.Debug.WriteLine("injections: "+injections.Count());
+                //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToArray().GetValue(0).ToString());
 
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
@@ -246,7 +256,8 @@ namespace strange.extensions.reflector.impl
             IEnumerable<MemberInfo> membersquery = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where m.IsPublic select m;
             //MemberInfo[] members = membersquery.Cast<MemberInfo>().ToArray();
             MemberInfo[] members = (MemberInfo[])membersquery.ToArray();
-            System.Diagnostics.Debug.WriteLine("members: "+members.ToString());
+           // System.Diagnostics.Debug.WriteLine("members: "+members.ToString());
+            //System.Diagnostics.Debug.WriteLine("members: "+members.ToArray().GetValue(0).ToString());
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -263,7 +274,8 @@ namespace strange.extensions.reflector.impl
 #if NETFX_CORE
                 System.Diagnostics.Debug.WriteLine("InjectMember: " + member.GetCustomAttributes(typeof(Inject), true));
                 object[] injections = (Object[])(member.GetCustomAttributes(typeof(Inject), true));
-                System.Diagnostics.Debug.WriteLine("injections: "+injections.ToString());
+                //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToString());
+                //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToArray().GetValue(0).ToString());
 
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
@@ -273,7 +285,8 @@ namespace strange.extensions.reflector.impl
                 if (injections.Length > 0)
                 {
 					Inject attr = injections [0] as Inject;
-					PropertyInfo point = member as PropertyInfo;
+                    System.Diagnostics.Debug.WriteLine("injections: " + attr);
+                    PropertyInfo point = member as PropertyInfo;
 					Type pointType = point.PropertyType;
 					KeyValuePair<Type, PropertyInfo> pair = new KeyValuePair<Type, PropertyInfo> (pointType, point);
 					pairs = AddKV (pair, pairs);
