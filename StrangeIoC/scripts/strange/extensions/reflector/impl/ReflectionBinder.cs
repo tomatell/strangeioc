@@ -48,9 +48,11 @@ namespace strange.extensions.reflector.impl
         public IReflectedClass Get(Type type)
         {
             IBinding binding = GetBinding(type);
+            System.Diagnostics.Debug.WriteLine("Binding type: " +type);
             IReflectedClass retv;
             if (binding == null)
             {
+                System.Diagnostics.Debug.WriteLine("Binding is null. ");
                 binding = GetRawBinding();
                 IReflectedClass reflected = new ReflectedClass();
                 mapPreferredConstructor(reflected, binding, type);
@@ -93,17 +95,20 @@ namespace strange.extensions.reflector.impl
                 Type paramType = param.ParameterType;
                 paramList[i] = paramType;
 #if NETFX_CORE
-				object[] attributes = (object[])(param.GetCustomAttributes(typeof(Name), false));
+				var attributes = param.GetCustomAttributes(typeof(Name), false);
                 //System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToString());
                 //System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToArray().GetValue(0).ToString());
-
+                if (attributes.Count() > 0)
+                {
+                    names[i] = ((Name)attributes.FirstOrDefault()).name;
 #else
                 object[] attributes = param.GetCustomAttributes(typeof(Name), false);
-
-#endif
                 if (attributes.Length > 0)
                 {
                     names[i] = ((Name)attributes[0]).name;
+
+#endif
+
                     System.Diagnostics.Debug.WriteLine("attributes: " + names[i].ToString());
                 }
                 i++;
@@ -246,7 +251,7 @@ namespace strange.extensions.reflector.impl
             foreach (MemberInfo member in privateMembers)
             {
 #if NETFX_CORE
-                object[] injections = (Object[])(member.GetCustomAttributes(typeof(Inject), true));
+                var injections = member.GetCustomAttributes(typeof(Inject), true);
                 //System.Diagnostics.Debug.WriteLine("injections: "+injections.Count());
                 //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToArray().GetValue(0).ToString());
                  if (injections.Count() > 0)
@@ -287,22 +292,27 @@ namespace strange.extensions.reflector.impl
 
 
 #if NETFX_CORE
-             foreach (MemberInfo member in members.OfType<MethodBase>().Where<MethodBase>(m => !m.IsPublic))
+             foreach (MemberInfo member in members.OfType<MethodBase>().Where<MethodBase>(m => m.IsPublic))
              {
-                System.Diagnostics.Debug.WriteLine("InjectMember: " + member.GetCustomAttributes(typeof(Inject), true));
-                object[] injections = (Object[])(member.GetCustomAttributes(typeof(Inject), true));
+               
+                var injections = member.GetCustomAttributes(typeof(Inject), true);
+                 System.Diagnostics.Debug.WriteLine("InjectMember: " + injections.FirstOrDefault());
                 //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToString());
                 //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToArray().GetValue(0).ToString());
-
-#else
-                object[] injections = member.GetCustomAttributes(typeof(Inject), true);
-                
-#endif
-				if (injections.Length > 0)
+                if (injections.Count() > 0)
                 {
 
-                        Inject attr = injections[0] as Inject;
-                        System.Diagnostics.Debug.WriteLine("injections: " + attr);
+                        Inject attr = injections.FirstOrDefault() as Inject;
+#else
+                object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+                if (injections.Length > 0)
+                {
+
+                    Inject attr = injections[0] as Inject;
+
+#endif
+
+                    System.Diagnostics.Debug.WriteLine("injections: " + attr);
                         PropertyInfo point = member as PropertyInfo;
                         Type pointType = point.PropertyType;
                         KeyValuePair<Type, PropertyInfo> pair = new KeyValuePair<Type, PropertyInfo>(pointType, point);
