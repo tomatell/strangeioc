@@ -34,6 +34,7 @@ using System.Linq;
 
 namespace strange.extensions.reflector.impl
 {
+
     public class ReflectionBinder : strange.framework.impl.Binder, IReflectionBinder
     {
         public ReflectionBinder()
@@ -125,18 +126,19 @@ namespace strange.extensions.reflector.impl
         private ConstructorInfo findPreferredConstructor(Type type)
         {
 #if NETFX_CORE
-            IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
+            //IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
             //ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
             //ConstructorInfo[] constructors = (ConstructorInfo[])constructorsquery.ToArray();
             //System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToString());
             //System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToArray().GetValue(1).ToString());
+            ConstructorInfo[] constructors = TypeInfoEx.GetPublicConstuctors(type);
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
                                                                         BindingFlags.Public |
                                                                         BindingFlags.Instance |
                                                                         BindingFlags.InvokeMethod);
-
+#endif
             if (constructors.Length == 1)
             {
                 System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0].ToString());
@@ -147,19 +149,8 @@ namespace strange.extensions.reflector.impl
             ConstructorInfo shortestConstructor = null;
             foreach (ConstructorInfo constructor in constructors)
             {
-#endif
-#if NETFX_CORE
-            if (constructors.Count() == 1)
-			{
-                System.Diagnostics.Debug.WriteLine("constructors: " + constructors.FirstOrDefault());
-                return constructors.FirstOrDefault();
-			}
-			int len;
-			int shortestLen = int.MaxValue;
-			ConstructorInfo shortestConstructor = null;
-            foreach (ConstructorInfo constructor in constructors.Where<ConstructorInfo>(y => !y.IsPublic))
-			{
 
+#if NETFX_CORE
                 object[] taggedConstructors = (Object[])(constructor.GetCustomAttributes(typeof(Construct), true));
 #else
                 object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
@@ -183,9 +174,10 @@ namespace strange.extensions.reflector.impl
         private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
         {
 #if NETFX_CORE
-            IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods.Where(m => m.IsPublic);
+            //IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods.Where(m => m.IsPublic);
             //MethodInfo[] methods = methodsquery.Cast<MethodInfo>().ToArray();
             //MethodInfo[] methods = (MethodInfo[])methodsquery.ToArray();
+            MethodInfo[] methods = TypeInfoEx.GetPublicMethods(type);
             //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
 
 
@@ -235,11 +227,12 @@ namespace strange.extensions.reflector.impl
             object[] names = new object[0];
 
 #if NETFX_CORE
-            IEnumerable<MemberInfo> privateMembers = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where !m.IsPublic select m;
+            //IEnumerable<MemberInfo> privateMembers = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where !m.IsPublic select m;
             //MemberInfo[] privateMembers = privateMembersqyery.Cast<MemberInfo>().ToArray();
             //MemberInfo[] privateMembers = (MemberInfo[])privateMembersqyery.ToArray();
             //System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers.ToString());
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
+            MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -251,32 +244,26 @@ namespace strange.extensions.reflector.impl
             foreach (MemberInfo member in privateMembers)
             {
 #if NETFX_CORE
-                var injections = member.GetCustomAttributes(typeof(Inject), true);
-                //System.Diagnostics.Debug.WriteLine("injections: "+injections.Count());
-                //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToArray().GetValue(0).ToString());
-                 if (injections.Count() > 0)
-                {
-					throw new ReflectionException ("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
-				}
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true).Cast<object>().ToArray();
 
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+#endif
 
                 if (injections.Length > 0)
                 {
                     throw new ReflectionException("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
                 }
 
-#endif
-
             }
 
 #if NETFX_CORE
-            IEnumerable<MemberInfo> members = type.GetTypeInfo().DeclaredMembers;
+            //IEnumerable<MemberInfo> members = type.GetTypeInfo().DeclaredMembers;
             //MemberInfo[] members = membersquery.Cast<MemberInfo>().ToArray();
             //MemberInfo[] members = (MemberInfo[])membersquery.ToArray();
            // System.Diagnostics.Debug.WriteLine("members: "+members.ToString());
             //System.Diagnostics.Debug.WriteLine("members: "+members.ToArray().GetValue(0).ToString());
+            MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -285,32 +272,21 @@ namespace strange.extensions.reflector.impl
                                                           BindingFlags.Public |
                                                           BindingFlags.Instance,
                                                           null, null);
+
+#endif
             foreach (MemberInfo member in members)
             {
                 //System.Diagnostics.Debug.WriteLine("member: " + member);
-#endif
-
-
 #if NETFX_CORE
-             foreach (MemberInfo member in members.OfType<MethodBase>().Where<MethodBase>(m => m.IsPublic))
-             {
-               
-                var injections = member.GetCustomAttributes(typeof(Inject), true);
-                 System.Diagnostics.Debug.WriteLine("InjectMember: " + injections.FirstOrDefault());
-                //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToString());
-                //System.Diagnostics.Debug.WriteLine("injections: "+injections.ToArray().GetValue(0).ToString());
-                if (injections.Count() > 0)
-                {
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true).Cast<object>().ToArray();
 
-                        Inject attr = injections.FirstOrDefault() as Inject;
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+#endif
                 if (injections.Length > 0)
                 {
 
                     Inject attr = injections[0] as Inject;
-
-#endif
 
                     System.Diagnostics.Debug.WriteLine("injections: " + attr);
                         PropertyInfo point = member as PropertyInfo;

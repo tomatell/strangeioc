@@ -45,7 +45,8 @@ namespace strange.extensions.implicitBind.impl
 		public void PostConstruct()
 		{
 #if NETFX_CORE
-			assembly = typeof(Assembly).GetTypeInfo().Assembly;
+			//assembly = typeof(Assembly).GetTypeInfo().Assembly;
+            assembly = typeof(Inject).GetTypeInfo().Assembly;
 #else
             assembly = Assembly.GetExecutingAssembly();
 #endif
