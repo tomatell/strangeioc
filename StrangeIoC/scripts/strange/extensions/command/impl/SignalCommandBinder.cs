@@ -165,14 +165,14 @@ namespace strange.extensions.command.impl
 			return command;
 		}
 
-		override public ICommandBinding Bind<T>()
+		/*override public ICommandBinding Bind<T>()
 		{
             System.Diagnostics.Debug.WriteLine("Debugging.........................");
             IInjectionBinding binding = null;
             try {
 
                 binding = injectionBinder.GetBinding<T>();
-                System.Diagnostics.Debug.WriteLine(binding);
+                //System.Diagnostics.Debug.WriteLine(binding);
                 if (binding == null) //If this isn't injected yet, inject a new one as a singleton
                 {
                     injectionBinder.Bind<T>().ToSingleton();
@@ -186,7 +186,7 @@ namespace strange.extensions.command.impl
             T signal = (T)injectionBinder.GetInstance<T>();
             
             return base.Bind(signal);
-		}
+		}*/
 
         // Follow the same code of SignalCommandBinder.Bind<T> but do it manually since we are using Reflection.
         override public ICommandBinding Bind(object value)

@@ -151,7 +151,7 @@ namespace strange.extensions.reflector.impl
             {
 
 #if NETFX_CORE
-                object[] taggedConstructors = (Object[])(constructor.GetCustomAttributes(typeof(Construct), true));
+                object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true).ToArray();;
 #else
                 object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
 
@@ -174,9 +174,6 @@ namespace strange.extensions.reflector.impl
         private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
         {
 #if NETFX_CORE
-            //IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods.Where(m => m.IsPublic);
-            //MethodInfo[] methods = methodsquery.Cast<MethodInfo>().ToArray();
-            //MethodInfo[] methods = (MethodInfo[])methodsquery.ToArray();
             MethodInfo[] methods = TypeInfoEx.GetPublicMethods(type);
             //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
 
@@ -192,16 +189,14 @@ namespace strange.extensions.reflector.impl
             {
 #if NETFX_CORE
 
-                object[] tagged = (Object[])(method.GetCustomAttributes(typeof(PostConstruct), true));
-                // System.Diagnostics.Debug.WriteLine("tagged : "+tagged.ToString());
-                //System.Diagnostics.Debug.WriteLine("tagged: "+tagged.ToArray().GetValue(0).ToString());
+                object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true).ToArray();
 #else
                 object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
 
 #endif
                 if (tagged.Length > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("method: " + method.ToString());
+                    System.Diagnostics.Debug.WriteLine("tagged: " + tagged);
                     methodList.Add(method);
                 }
             }
@@ -227,10 +222,6 @@ namespace strange.extensions.reflector.impl
             object[] names = new object[0];
 
 #if NETFX_CORE
-            //IEnumerable<MemberInfo> privateMembers = from m in type.GetTypeInfo().DeclaredMembers.OfType<MethodBase>() where !m.IsPublic select m;
-            //MemberInfo[] privateMembers = privateMembersqyery.Cast<MemberInfo>().ToArray();
-            //MemberInfo[] privateMembers = (MemberInfo[])privateMembersqyery.ToArray();
-            //System.Diagnostics.Debug.WriteLine("privateMembers: "+privateMembers.ToString());
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
             MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
 #else
@@ -244,7 +235,7 @@ namespace strange.extensions.reflector.impl
             foreach (MemberInfo member in privateMembers)
             {
 #if NETFX_CORE
-				object[] injections = member.GetCustomAttributes(typeof(Inject), true).Cast<object>().ToArray();
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true).ToArray();
 
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
@@ -258,11 +249,6 @@ namespace strange.extensions.reflector.impl
             }
 
 #if NETFX_CORE
-            //IEnumerable<MemberInfo> members = type.GetTypeInfo().DeclaredMembers;
-            //MemberInfo[] members = membersquery.Cast<MemberInfo>().ToArray();
-            //MemberInfo[] members = (MemberInfo[])membersquery.ToArray();
-           // System.Diagnostics.Debug.WriteLine("members: "+members.ToString());
-            //System.Diagnostics.Debug.WriteLine("members: "+members.ToArray().GetValue(0).ToString());
             MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
 
 #else
@@ -345,7 +331,7 @@ namespace strange.extensions.reflector.impl
 		private int getPriority(MethodInfo methodInfo)
 		{
 #if NETFX_CORE
-            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().First<PostConstruct>();
+            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
             System.Diagnostics.Debug.WriteLine("attr: " + attr.ToString());
 
 #else
