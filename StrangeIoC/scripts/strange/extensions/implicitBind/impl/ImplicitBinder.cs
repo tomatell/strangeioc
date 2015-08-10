@@ -45,12 +45,12 @@ namespace strange.extensions.implicitBind.impl
 		public void PostConstruct()
 		{
 #if NETFX_CORE
-			//assembly = typeof(Assembly).GetTypeInfo().Assembly;
-            //assembly = typeof(PostConstruct).GetTypeInfo().Assembly;
-            assembly = GetType().GetTypeInfo().Assembly;
+
+            //assembly = GetType().GetTypeInfo().Assembly;
+            assembly = typeof(ImplicitBinder).GetTypeInfo().Assembly;
             foreach (TypeInfo type in assembly.DefinedTypes)
             {
-                System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
+                //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
             }
 #else
             assembly = Assembly.GetExecutingAssembly();
@@ -86,14 +86,15 @@ namespace strange.extensions.implicitBind.impl
 
 				foreach (Type type in typesInNamespaces)
 				{
+                    //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
 #if NETFX_CORE
-                    object[] implements = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true).Cast<object>().ToArray();
+                    object[] implements = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true).ToArray();
 
-                    object[] implementedBy = type.GetTypeInfo().GetCustomAttributes(typeof (ImplementedBy), true).Cast<object>().ToArray();
+                    object[] implementedBy = type.GetTypeInfo().GetCustomAttributes(typeof (ImplementedBy), true).ToArray();
 
-                    object[] mediated = type.GetTypeInfo().GetCustomAttributes(typeof (MediatedBy), true).Cast<object>().ToArray();
+                    object[] mediated = type.GetTypeInfo().GetCustomAttributes(typeof (MediatedBy), true).ToArray();
 
-                    object[] mediates = type.GetTypeInfo().GetCustomAttributes(typeof (Mediates), true).Cast<object>().ToArray();
+                    object[] mediates = type.GetTypeInfo().GetCustomAttributes(typeof (Mediates), true).ToArray();
 
 #else
                     object[] implements = type.GetCustomAttributes(typeof(Implements), true);

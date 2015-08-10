@@ -31,6 +31,7 @@ using strange.framework.api;
 using strange.framework.impl;
 using System.Collections;
 using System.Linq;
+using System.Reflection.Emit;
 
 namespace strange.extensions.reflector.impl
 {
@@ -96,19 +97,16 @@ namespace strange.extensions.reflector.impl
                 Type paramType = param.ParameterType;
                 paramList[i] = paramType;
 #if NETFX_CORE
-				var attributes = param.GetCustomAttributes(typeof(Name), false);
-                //System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToString());
-                //System.Diagnostics.Debug.WriteLine("attributes: "+attributes.ToArray().GetValue(0).ToString());
-                if (attributes.Count() > 0)
-                {
-                    names[i] = ((Name)attributes.FirstOrDefault()).name;
+				object[] attributes = param.GetCustomAttributes(typeof(Name), false).ToArray();
+
 #else
                 object[] attributes = param.GetCustomAttributes(typeof(Name), false);
+
+
+#endif
                 if (attributes.Length > 0)
                 {
                     names[i] = ((Name)attributes[0]).name;
-
-#endif
 
                     System.Diagnostics.Debug.WriteLine("attributes: " + names[i].ToString());
                 }
@@ -126,12 +124,10 @@ namespace strange.extensions.reflector.impl
         private ConstructorInfo findPreferredConstructor(Type type)
         {
 #if NETFX_CORE
-            //IEnumerable<ConstructorInfo> constructors = type.GetTypeInfo().DeclaredConstructors;
-            //ConstructorInfo[] constructors = constructorsquery.Cast<ConstructorInfo>().ToArray();
-            //ConstructorInfo[] constructors = (ConstructorInfo[])constructorsquery.ToArray();
-            //System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToString());
-            //System.Diagnostics.Debug.WriteLine("constructors: "+constructors.ToArray().GetValue(1).ToString());
-            ConstructorInfo[] constructors = TypeInfoEx.GetPublicConstuctors(type);
+
+            //ConstructorInfo[] constructors = TypeInfoEx.GetPublicConstuctors(type);
+            BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod;
+            ConstructorInfo[] constructors = TypeInfoEx.GetMembers<ConstructorInfo>(type, flags).ToArray();
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -141,7 +137,7 @@ namespace strange.extensions.reflector.impl
 #endif
             if (constructors.Length == 1)
             {
-                System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0].ToString());
+                System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0]);
                 return constructors[0];
             }
             int len;
@@ -174,7 +170,9 @@ namespace strange.extensions.reflector.impl
         private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
         {
 #if NETFX_CORE
-            MethodInfo[] methods = TypeInfoEx.GetPublicMethods(type);
+            //MethodInfo[] methods = TypeInfoEx.GetPublicMethods(type);
+            BindingFlags mflags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance;
+            MethodInfo[] methods  = TypeInfoEx.GetMethods(type, mflags).ToArray();
             //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
 
 
@@ -223,7 +221,9 @@ namespace strange.extensions.reflector.impl
 
 #if NETFX_CORE
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
-            MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
+            //MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
+            BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.NonPublic | BindingFlags.Instance;
+            MemberInfo[] privateMembers = TypeInfoEx.GetMembers< PropertyInfo>(type, flags).ToArray();
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -249,7 +249,9 @@ namespace strange.extensions.reflector.impl
             }
 
 #if NETFX_CORE
-            MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
+            //MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
+            BindingFlags flags2 = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.Public | BindingFlags.Instance;
+            MemberInfo[] members = TypeInfoEx.GetMembers<PropertyInfo>(type, flags2).ToArray();
 
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
@@ -264,7 +266,7 @@ namespace strange.extensions.reflector.impl
             {
                 //System.Diagnostics.Debug.WriteLine("member: " + member);
 #if NETFX_CORE
-				object[] injections = member.GetCustomAttributes(typeof(Inject), true).Cast<object>().ToArray();
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true).ToArray();
 
 #else
                 object[] injections = member.GetCustomAttributes(typeof(Inject), true);
@@ -313,6 +315,8 @@ namespace strange.extensions.reflector.impl
             list[len] = value;
             return list;
         }
+
+
     }
 }
 namespace strange.extensions.reflector.impl
@@ -340,8 +344,7 @@ namespace strange.extensions.reflector.impl
 			int priority = attr.priority;
 			return priority;
 		}
-
-	}
+    }
 }
 
 
