@@ -126,7 +126,8 @@ namespace strange.extensions.command.impl
 							{
 #if NETFX_CORE
                                 Type valuetype = value.GetType();
-								if (type.GetTypeInfo().IsAssignableFrom(valuetype.GetTypeInfo())) //IsAssignableFrom lets us test interfaces as well
+								//if (type.GetTypeInfo().IsAssignableFrom(valuetype.GetTypeInfo())) //IsAssignableFrom lets us test interfaces as well
+                                if(TypeEx.IsAssignableFrom(type,value.GetType()))
 #else
                                 if (type.IsAssignableFrom(value.GetType())) //IsAssignableFrom lets us test interfaces as well
 

@@ -111,7 +111,8 @@ namespace strange.extensions.injector.impl
 				object aKey = keys[a];
 				Type keyType = (aKey is Type) ? aKey as Type : aKey.GetType();
 #if NETFX_CORE
-				if (keyType.GetTypeInfo().IsAssignableFrom(objType.GetTypeInfo()) == false && (HasGenericAssignableFrom(keyType, objType) == false))
+				//if (keyType.GetTypeInfo().IsAssignableFrom(objType.GetTypeInfo()) == false && (HasGenericAssignableFrom(keyType, objType) == false))
+                if (TypeEx.IsAssignableFrom(keyType, objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
 #else
                 if (keyType.IsAssignableFrom(objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
 #endif

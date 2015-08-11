@@ -127,7 +127,8 @@ namespace strange.extensions.reflector.impl
 
             //ConstructorInfo[] constructors = TypeInfoEx.GetPublicConstuctors(type);
             BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod;
-            ConstructorInfo[] constructors = TypeInfoEx.GetMembers<ConstructorInfo>(type, flags).ToArray();
+           // ConstructorInfo[] constructors = TypeEx.GetMembers<ConstructorInfo>(type, flags).ToArray();
+            ConstructorInfo[] constructors = TypeEx.GetConstructors(type, flags);
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -172,7 +173,7 @@ namespace strange.extensions.reflector.impl
 #if NETFX_CORE
             //MethodInfo[] methods = TypeInfoEx.GetPublicMethods(type);
             BindingFlags mflags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance;
-            MethodInfo[] methods  = TypeInfoEx.GetMethods(type, mflags).ToArray();
+            MethodInfo[] methods  = TypeEx.GetMethods(type, mflags);
             //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
 
 
@@ -223,7 +224,7 @@ namespace strange.extensions.reflector.impl
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
             //MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
             BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.NonPublic | BindingFlags.Instance;
-            MemberInfo[] privateMembers = TypeInfoEx.GetMembers< PropertyInfo>(type, flags).ToArray();
+            MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -251,8 +252,8 @@ namespace strange.extensions.reflector.impl
 #if NETFX_CORE
             //MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
             BindingFlags flags2 = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.Public | BindingFlags.Instance;
-            MemberInfo[] members = TypeInfoEx.GetMembers<PropertyInfo>(type, flags2).ToArray();
-
+            //MemberInfo[] members = TypeEx.FindMembers(type, flags2);
+            MemberInfo[] members = TypeEx.GetProperties(type, flags2);
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
                                                           BindingFlags.FlattenHierarchy |
