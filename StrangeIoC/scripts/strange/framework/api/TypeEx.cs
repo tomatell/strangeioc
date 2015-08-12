@@ -243,6 +243,39 @@ namespace System.Reflection
 
             return results;
         }
+        public static MemberInfo[] FindMembers(Type type, MemberTypes membertype, BindingFlags flags)
+        {
+            return eFindMembers<MemberInfo>(type, membertype, flags).ToArray();
+        }
+
+        public static List<T> eFindMembers<T>(Type type, MemberTypes membertype, BindingFlags flags)
+            where T : MemberInfo
+        {
+            var results = new List<T>();
+
+            var info = type.GetTypeInfo();
+            bool inParent = false;
+            while (true)
+            {
+                foreach (T member in info.DeclaredMembers.Where(v => typeof(MemberInfo).IsAssignableFrom(v.GetType())))
+                {
+                    if (member.CheckBindings(flags, inParent) && (MemberInfo)member.MemberTypes == membertype)
+                        results.Add(member);
+                }
+
+                // constructors never walk the hierarchy...
+                if (typeof(MemberInfo) == typeof(ConstructorInfo))
+                    break;
+
+                // up...
+                if (info.BaseType == null)
+                    break;
+                info = info.BaseType.GetTypeInfo();
+                inParent = true;
+            }
+
+            return results;
+        }
 
         public static ConstructorInfo GetConstructor(this Type type, Type[] types)
         {
