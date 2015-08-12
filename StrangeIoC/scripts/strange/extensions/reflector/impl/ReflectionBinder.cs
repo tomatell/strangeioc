@@ -41,12 +41,10 @@ namespace strange.extensions.reflector.impl
         public ReflectionBinder()
         {
         }
-
         public IReflectedClass Get<T>()
         {
             return Get(typeof(T));
         }
-
         public IReflectedClass Get(Type type)
         {
             IBinding binding = GetBinding(type);
@@ -224,8 +222,8 @@ namespace strange.extensions.reflector.impl
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
             //MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
             BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.NonPublic | BindingFlags.Instance;
-            //MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
-            MemberInfo[] privateMembers = TypeEx.FindMembers(type, MemberTypes.Property, flags);
+            MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
+            //MemberInfo[] privateMembers = TypeEx.FindMembers(type, MemberTypes.Property, flags);
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -254,8 +252,8 @@ namespace strange.extensions.reflector.impl
             //MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
             BindingFlags flags2 = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.Public | BindingFlags.Instance;
             //MemberInfo[] members = TypeEx.FindMembers(type, flags2);
-            //MemberInfo[] members = TypeEx.GetProperties(type, flags2);
-            MemberInfo[] members = TypeEx.FindMembers(type, MemberTypes.Property, flags2);
+            MemberInfo[] members = TypeEx.GetProperties(type, flags2);
+            //MemberInfo[] members = TypeEx.FindMembers(type, MemberTypes.Property, flags2);
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
                                                           BindingFlags.FlattenHierarchy |

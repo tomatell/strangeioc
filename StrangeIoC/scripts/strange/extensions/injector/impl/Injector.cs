@@ -78,7 +78,7 @@ namespace strange.extensions.injector.impl
 				object[] tl = binding.key as object[];
 				reflectionType = tl [0] as Type;
 #if NETFX_CORE
-				if (reflectionType.GetTypeInfo().IsPrimitive || reflectionType == typeof(Decimal) || reflectionType == typeof(string))
+				if (TypeEx.IsPrimitive(reflectionType) || reflectionType == typeof(Decimal) || reflectionType == typeof(string))
 #else
                 if (reflectionType.IsPrimitive || reflectionType == typeof(Decimal) || reflectionType == typeof(string))
 #endif
@@ -142,7 +142,7 @@ namespace strange.extensions.injector.impl
 			//Some things can't be injected into. Bail out.
 			Type t = target.GetType ();
 #if NETFX_CORE
-			if (t.GetTypeInfo().IsPrimitive || t == typeof(Decimal) || t == typeof(string))
+            if (TypeEx.IsPrimitive(t) || t == typeof(Decimal) || t == typeof(string))
 #else
             if (t.IsPrimitive || t == typeof(Decimal) || t == typeof(string))
 #endif
@@ -169,7 +169,7 @@ namespace strange.extensions.injector.impl
 
 			Type t = target.GetType ();
 #if NETFX_CORE
-			if (t.GetTypeInfo().IsPrimitive || t == typeof(Decimal) || t == typeof(string))
+			if (TypeEx.IsPrimitive(t) || t == typeof(Decimal) || t == typeof(string))
 #else
             if (t.IsPrimitive || t == typeof(Decimal) || t == typeof(string))
 #endif

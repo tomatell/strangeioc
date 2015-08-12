@@ -245,7 +245,7 @@ namespace System.Reflection
         }
         public static MemberInfo[] FindMembers(Type type, MemberTypes membertype, BindingFlags flags)
         {
-            return eFindMembers<MemberInfo>(type, membertype, flags).ToArray();
+            return GetMembers<MemberInfo>(type, flags).ToArray();
         }
 
         public static List<T> eFindMembers<T>(Type type, MemberTypes membertype, BindingFlags flags)
@@ -259,7 +259,8 @@ namespace System.Reflection
             {
                 foreach (T member in info.DeclaredMembers.Where(v => typeof(MemberInfo).IsAssignableFrom(v.GetType())))
                 {
-                    if (member.CheckBindings(flags, inParent) && (MemberInfo)member.MemberTypes == membertype)
+                    System.Diagnostics.Debug.WriteLine("findmember:" + ((MemberInfo)member).MemberType());
+                    if (member.CheckBindings(flags, inParent) && ((MemberInfo)member).MemberType() == membertype)
                         results.Add(member);
                 }
 
