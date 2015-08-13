@@ -51,7 +51,7 @@ namespace strange.extensions.implicitBind.impl
             assembly = TypeEx.Assembly(typeof(ImplicitBinder));
             foreach (TypeInfo type in assembly.DefinedTypes)
             {
-                System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
+                //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
             }
 #else
             assembly = Assembly.GetExecutingAssembly();
@@ -87,7 +87,7 @@ namespace strange.extensions.implicitBind.impl
 
 				foreach (Type type in typesInNamespaces)
 				{
-                    System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
+                    //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
 #if NETFX_CORE
                     object[] implements = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true).ToArray();
 

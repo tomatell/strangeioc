@@ -72,11 +72,13 @@ namespace strange.extensions.injector.impl
 			if (binding.value is Type)
 			{
 				reflectionType = binding.value as Type;
-			}
+                System.Diagnostics.Debug.WriteLine("reflectionType:----------------------------------------------------------------", reflectionType);
+            }
 			else if (binding.value == null)
 			{
 				object[] tl = binding.key as object[];
 				reflectionType = tl [0] as Type;
+                System.Diagnostics.Debug.WriteLine("binding.value is null. reflectionType:----------------------------------------------------------------", reflectionType);
 #if NETFX_CORE
 				if (TypeEx.IsPrimitive(reflectionType) || reflectionType == typeof(Decimal) || reflectionType == typeof(string))
 #else
@@ -135,7 +137,8 @@ namespace strange.extensions.injector.impl
 
 		public object Inject(object target, bool attemptConstructorInjection)
 		{
-			failIf(binder == null, "Attempt to inject into Injector without a Binder", InjectionExceptionType.NO_BINDER);
+            System.Diagnostics.Debug.WriteLine("Inject:----------------------------------------------------------------", target);
+            failIf(binder == null, "Attempt to inject into Injector without a Binder", InjectionExceptionType.NO_BINDER);
 			failIf(reflector == null, "Attempt to inject without a reflector", InjectionExceptionType.NO_REFLECTOR);
 			failIf(target == null, "Attempt to inject into null instance", InjectionExceptionType.NULL_TARGET);
 

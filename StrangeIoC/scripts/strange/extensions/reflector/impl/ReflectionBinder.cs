@@ -222,8 +222,8 @@ namespace strange.extensions.reflector.impl
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
             //MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
             BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.NonPublic | BindingFlags.Instance;
-            MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
-            //MemberInfo[] privateMembers = TypeEx.FindMembers(type, MemberTypes.Property, flags);
+            //MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
+            MemberInfo[] privateMembers = TypeEx.FindMembers(type, MemberTypes.Property, flags);
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -252,8 +252,8 @@ namespace strange.extensions.reflector.impl
             //MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
             BindingFlags flags2 = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.Public | BindingFlags.Instance;
             //MemberInfo[] members = TypeEx.FindMembers(type, flags2);
-            MemberInfo[] members = TypeEx.GetProperties(type, flags2);
-            //MemberInfo[] members = TypeEx.FindMembers(type, MemberTypes.Property, flags2);
+            //MemberInfo[] members = TypeEx.GetProperties(type, flags2);
+            MemberInfo[] members = TypeEx.FindMembers(type, MemberTypes.Property, flags2);
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
                                                           BindingFlags.FlattenHierarchy |
@@ -336,11 +336,12 @@ namespace strange.extensions.reflector.impl
 		private int getPriority(MethodInfo methodInfo)
 		{
 #if NETFX_CORE
-            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
+            //PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
+            PostConstruct attr = TypeEx.GetCustomAttributes(typeof(PostConstruct), true)[0] as PostConstruct;
             System.Diagnostics.Debug.WriteLine("attr: " + attr.ToString());
 
 #else
-        PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
+            PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
 #endif
 			int priority = attr.priority;
 			return priority;

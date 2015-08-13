@@ -243,39 +243,121 @@ namespace System.Reflection
 
             return results;
         }
-        public static MemberInfo[] FindMembers(Type type, MemberTypes membertype, BindingFlags flags)
+
+
+        public static MemberInfo[]  FindMembers(Type type, MemberTypes memberType, BindingFlags bindingAttr)
         {
-            return GetMembers<MemberInfo>(type, flags).ToArray();
+             // Define the work arrays
+            MethodInfo[] m = null;
+            ConstructorInfo[] c = null;
+            FieldInfo[] f = null;
+            PropertyInfo[] p = null;
+            EventInfo[] e = null;
+            Type[] t = null;
+            
+            int i = 0;
+            int cnt = 0;            // Total Matchs
+            
+            // Check the methods
+            if ((memberType & MemberTypes.Method) != 0) {
+                m = GetMethods(type, bindingAttr);
+            }
+            
+            // Check the constructors
+            if ((memberType & MemberTypes.Constructor) != 0) {
+                c = GetConstructors(type, bindingAttr);
+                System.Diagnostics.Debug.WriteLine("GetConstructors:-------------------------- "+c);
+                
+            }
+            
+            // Check the fields
+            if ((memberType & MemberTypes.Field) != 0) {
+                f = GetFields(type, bindingAttr);
+                System.Diagnostics.Debug.WriteLine("GetFields:-------------------------- "+f);
+                
+            }
+            
+            // Check the Properties
+            if ((memberType & MemberTypes.Property) != 0) {
+                p = GetProperties(type, bindingAttr);
+                System.Diagnostics.Debug.WriteLine("GetProperties:-------------------------- "+p);
+                
+            }
+            
+            // Check the Events
+            if ((memberType & MemberTypes.Event) != 0) {
+                e = GetEvents(type, bindingAttr);
+                System.Diagnostics.Debug.WriteLine("GetEvents:-------------------------- "+e);
+                
+            }
+            
+            // Check the Types
+            if ((memberType & MemberTypes.NestedType) != 0) {
+                t = GetNestedTypes(type, bindingAttr);
+                System.Diagnostics.Debug.WriteLine("GetNestedTypes:-------------------------- "+t);
+                
+            }
+            
+            // Allocate the Member Info
+            MemberInfo[] ret = new MemberInfo[cnt];
+            
+            // Copy the Methods
+            cnt = 0;
+            if (m != null) {
+                for (i=0;i<m.Length;i++)
+                    if (m[i] != null)
+                        ret[cnt++] = m[i];
+            }
+            
+            // Copy the Constructors
+            if (c != null) {
+                for (i=0;i<c.Length;i++)
+                    if (c[i] != null)
+                        ret[cnt++] = c[i];
+            }
+            
+            // Copy the Fields
+            if (f != null) {
+                for (i=0;i<f.Length;i++)
+                    if (f[i] != null)
+                        ret[cnt++] = f[i];
+            }
+            
+            // Copy the Properties
+            if (p != null) {
+                for (i=0;i<p.Length;i++)
+                    if (p[i] != null)
+                        ret[cnt++] = p[i];
+            }
+            
+            // Copy the Events
+            if (e != null) {
+                for (i=0;i<e.Length;i++)
+                    if (e[i] != null)
+                        ret[cnt++] = e[i];
+            }
+            
+            // Copy the Types
+            if (t != null) {
+                for (i=0;i<t.Length;i++)
+                    if (t[i] != null)
+                        ret[cnt++] = t[i].GetTypeInfo();
+            }
+            
+            return ret;
         }
 
-        public static List<T> eFindMembers<T>(Type type, MemberTypes membertype, BindingFlags flags)
-            where T : MemberInfo
-        {
-            var results = new List<T>();
+        public static Type[] GetNestedTypes(this Type type, BindingFlags flags) {
+            // todo - flags are ignored
 
-            var info = type.GetTypeInfo();
-            bool inParent = false;
-            while (true)
-            {
-                foreach (T member in info.DeclaredMembers.Where(v => typeof(MemberInfo).IsAssignableFrom(v.GetType())))
-                {
-                    System.Diagnostics.Debug.WriteLine("findmember:" + ((MemberInfo)member).MemberType());
-                    if (member.CheckBindings(flags, inParent) && ((MemberInfo)member).MemberType() == membertype)
-                        results.Add(member);
-                }
-
-                // constructors never walk the hierarchy...
-                if (typeof(MemberInfo) == typeof(ConstructorInfo))
-                    break;
-
-                // up...
-                if (info.BaseType == null)
-                    break;
-                info = info.BaseType.GetTypeInfo();
-                inParent = true;
+            Type[] t = null;
+            int i = 0;
+            foreach(TypeInfo ti in type.GetTypeInfo().DeclaredNestedTypes) {
+                t[i] = ti.AsType();
+                System.Diagnostics.Debug.WriteLine("TypeInfo ti:-------------------------- "+t);
+                i++;
             }
-
-            return results;
+            return t;
         }
 
         public static ConstructorInfo GetConstructor(this Type type, Type[] types)
