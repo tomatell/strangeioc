@@ -48,7 +48,7 @@ namespace strange.extensions.reflector.impl
         public IReflectedClass Get(Type type)
         {
             IBinding binding = GetBinding(type);
-            System.Diagnostics.Debug.WriteLine("Binding type: " +type);
+            System.Diagnostics.Debug.WriteLine("Binding type: " +type.ToString());
             IReflectedClass retv;
             if (binding == null)
             {
@@ -123,10 +123,8 @@ namespace strange.extensions.reflector.impl
         {
 #if NETFX_CORE
 
-            //ConstructorInfo[] constructors = TypeInfoEx.GetPublicConstuctors(type);
             BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod;
-           // ConstructorInfo[] constructors = TypeEx.GetMembers<ConstructorInfo>(type, flags).ToArray();
-            ConstructorInfo[] constructors = TypeEx.GetConstructors(type, flags);
+            ConstructorInfo[] constructors = type.GetConstructors(flags);
 
 #else
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
@@ -136,7 +134,7 @@ namespace strange.extensions.reflector.impl
 #endif
             if (constructors.Length == 1)
             {
-                System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0]);
+                System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0].ToString());
                 return constructors[0];
             }
             int len;
@@ -144,7 +142,7 @@ namespace strange.extensions.reflector.impl
             ConstructorInfo shortestConstructor = null;
             foreach (ConstructorInfo constructor in constructors)
             {
-
+                System.Diagnostics.Debug.WriteLine("constructor: " + constructor.ToString());
 #if NETFX_CORE
                 object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true).ToArray();;
 #else
@@ -153,7 +151,7 @@ namespace strange.extensions.reflector.impl
 #endif
                 if (taggedConstructors.Length > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("constructor: " + constructor.ToString());
+                    System.Diagnostics.Debug.WriteLine("taggedconstructor: " + constructor.ToString());
                     return constructor;
                 }
                 len = constructor.GetParameters().Length;
@@ -169,9 +167,8 @@ namespace strange.extensions.reflector.impl
         private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
         {
 #if NETFX_CORE
-            //MethodInfo[] methods = TypeInfoEx.GetPublicMethods(type);
-            BindingFlags mflags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance;
-            MethodInfo[] methods  = TypeEx.GetMethods(type, mflags);
+            BindingFlags mflags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod;
+            MethodInfo[] methods  = type.GetMethods(mflags);
             //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
 
 
@@ -220,10 +217,9 @@ namespace strange.extensions.reflector.impl
 
 #if NETFX_CORE
             //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
-            //MemberInfo[] privateMembers = TypeInfoEx.GetPrivateMembers(type);
             BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.NonPublic | BindingFlags.Instance;
             //MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
-            MemberInfo[] privateMembers = TypeEx.FindMembers(type, MemberTypes.Property, flags);
+            MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property, flags);
 #else
             MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
                                                     BindingFlags.FlattenHierarchy |
@@ -234,7 +230,9 @@ namespace strange.extensions.reflector.impl
 #endif
             foreach (MemberInfo member in privateMembers)
             {
+
 #if NETFX_CORE
+                System.Diagnostics.Debug.WriteLine("members:" + member.ToString().PadRight(40) + "Type:" + TypeEx.GetMemberType(member));
 				object[] injections = member.GetCustomAttributes(typeof(Inject), true).ToArray();
 
 #else
@@ -249,11 +247,10 @@ namespace strange.extensions.reflector.impl
             }
 
 #if NETFX_CORE
-            //MemberInfo[] members = TypeInfoEx.GetPublicMembers(type);
             BindingFlags flags2 = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.Public | BindingFlags.Instance;
             //MemberInfo[] members = TypeEx.FindMembers(type, flags2);
-            //MemberInfo[] members = TypeEx.GetProperties(type, flags2);
-            MemberInfo[] members = TypeEx.FindMembers(type, MemberTypes.Property, flags2);
+            //MemberInfo[] members = type.GetProperties(flags2);
+            MemberInfo[] members = type.FindMembers(MemberTypes.Property, flags2);
 #else
             MemberInfo[] members = type.FindMembers(MemberTypes.Property,
                                                           BindingFlags.FlattenHierarchy |
@@ -265,8 +262,9 @@ namespace strange.extensions.reflector.impl
 #endif
             foreach (MemberInfo member in members)
             {
-                System.Diagnostics.Debug.WriteLine("member: " + member);
+
 #if NETFX_CORE
+                System.Diagnostics.Debug.WriteLine("members:" + member.ToString().PadRight(40) + "Type:" + TypeEx.GetMemberType(member));
 				object[] injections = member.GetCustomAttributes(typeof(Inject), true).ToArray();
 
 #else
@@ -337,11 +335,11 @@ namespace strange.extensions.reflector.impl
 		{
 #if NETFX_CORE
             //PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
-            PostConstruct attr = TypeEx.GetCustomAttributes(typeof(PostConstruct), true)[0] as PostConstruct;
+            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
             System.Diagnostics.Debug.WriteLine("attr: " + attr.ToString());
 
 #else
-            PostConstruct attr = methodInfo.GetCustomAttributes(true)[0] as PostConstruct;
+            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true)[0] as PostConstruct;
 #endif
 			int priority = attr.priority;
 			return priority;

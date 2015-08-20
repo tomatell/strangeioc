@@ -89,13 +89,13 @@ namespace strange.extensions.implicitBind.impl
 				{
                     //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
 #if NETFX_CORE
-                    object[] implements = type.GetTypeInfo().GetCustomAttributes(typeof (Implements), true).ToArray();
+                    object[] implements = type.GetCustomAttributes(typeof (Implements), true);
 
-                    object[] implementedBy = type.GetTypeInfo().GetCustomAttributes(typeof (ImplementedBy), true).ToArray();
+                    object[] implementedBy = type.GetCustomAttributes(typeof (ImplementedBy), true);
 
-                    object[] mediated = type.GetTypeInfo().GetCustomAttributes(typeof (MediatedBy), true).ToArray();
+                    object[] mediated = type.GetCustomAttributes(typeof (MediatedBy), true);
 
-                    object[] mediates = type.GetTypeInfo().GetCustomAttributes(typeof (Mediates), true).ToArray();
+                    object[] mediates = type.GetCustomAttributes(typeof (Mediates), true);
 
 #else
                     object[] implements = type.GetCustomAttributes(typeof(Implements), true);
@@ -204,16 +204,11 @@ namespace strange.extensions.implicitBind.impl
 				//implementedBy/interfaces first, then implements to give them priority (they will overwrite)
                 foreach (ImplicitBindingVO toBind in implementedByBindings)
                 {
+                    System.Diagnostics.Debug.WriteLine("ImplicitBindingVO toBind: " +toBind.ToString());
                     Bind(toBind);
                 }
 
-                
-				//Next implements tags, which have priority over interfaces
-				
-                foreach (ImplicitBindingVO toBind in implementsBindings)
-                {
-                    Bind(toBind);
-                }
+
 #else
                 //implementedBy/interfaces first, then implements to give them priority (they will overwrite)
                 implementedByBindings.ForEach(Bind);

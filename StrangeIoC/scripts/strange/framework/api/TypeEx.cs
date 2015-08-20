@@ -245,7 +245,7 @@ namespace System.Reflection
         }
 
 
-        public static MemberInfo[]  FindMembers(Type type, MemberTypes memberType, BindingFlags bindingAttr)
+        public static MemberInfo[]  FindMembers(this Type type, MemberTypes memberType, BindingFlags bindingAttr)
         {
              // Define the work arrays
             MethodInfo[] m = null;
@@ -261,40 +261,47 @@ namespace System.Reflection
             // Check the methods
             if ((memberType & MemberTypes.Method) != 0) {
                 m = GetMethods(type, bindingAttr);
+                cnt+=m.Length;
             }
             
             // Check the constructors
             if ((memberType & MemberTypes.Constructor) != 0) {
                 c = GetConstructors(type, bindingAttr);
-                System.Diagnostics.Debug.WriteLine("GetConstructors:-------------------------- "+c);
+                cnt+=c.Length;
+                System.Diagnostics.Debug.WriteLine("GetConstructors:-------------------------- "+c.ToString());
                 
             }
             
             // Check the fields
             if ((memberType & MemberTypes.Field) != 0) {
                 f = GetFields(type, bindingAttr);
-                System.Diagnostics.Debug.WriteLine("GetFields:-------------------------- "+f);
+                cnt+=f.Length;
+                System.Diagnostics.Debug.WriteLine("GetFields:-------------------------- "+f.ToString());
                 
             }
             
             // Check the Properties
             if ((memberType & MemberTypes.Property) != 0) {
                 p = GetProperties(type, bindingAttr);
-                System.Diagnostics.Debug.WriteLine("GetProperties:-------------------------- "+p);
+                cnt+=p.Length;
+                System.Diagnostics.Debug.WriteLine("GetProperties:-------------------------- "+p.ToString());
                 
             }
             
             // Check the Events
             if ((memberType & MemberTypes.Event) != 0) {
                 e = GetEvents(type, bindingAttr);
-                System.Diagnostics.Debug.WriteLine("GetEvents:-------------------------- "+e);
+                cnt+=e.Length;
+                System.Diagnostics.Debug.WriteLine("GetEvents:-------------------------- "+e.ToString());
                 
             }
             
             // Check the Types
             if ((memberType & MemberTypes.NestedType) != 0) {
                 t = GetNestedTypes(type, bindingAttr);
-                System.Diagnostics.Debug.WriteLine("GetNestedTypes:-------------------------- "+t);
+                cnt+=t.Length;
+                System.Diagnostics.Debug.WriteLine("GetNestedTypes:-------------------------- "+t.ToString());
+                
                 
             }
             
@@ -325,6 +332,7 @@ namespace System.Reflection
             
             // Copy the Properties
             if (p != null) {
+                System.Diagnostics.Debug.WriteLine("p.Length:-------------------------- "+p.Length);
                 for (i=0;i<p.Length;i++)
                     if (p[i] != null)
                         ret[cnt++] = p[i];
@@ -354,11 +362,32 @@ namespace System.Reflection
             int i = 0;
             foreach(TypeInfo ti in type.GetTypeInfo().DeclaredNestedTypes) {
                 t[i] = ti.AsType();
-                System.Diagnostics.Debug.WriteLine("TypeInfo ti:-------------------------- "+t);
+                System.Diagnostics.Debug.WriteLine("TypeInfo ti:-------------------------- "+t.ToString());
                 i++;
             }
             return t;
         }
+
+        public static MemberTypes GetMemberType(this MemberInfo member)
+        {
+            if (member is FieldInfo)
+                return MemberTypes.Field;
+            if (member is ConstructorInfo)
+                return MemberTypes.Constructor;
+            if (member is PropertyInfo)
+                return MemberTypes.Property;
+            if (member is EventInfo)
+                return MemberTypes.Event;
+            if (member is MethodInfo)
+                return MemberTypes.Method;
+
+            var typeInfo = member as TypeInfo;
+            
+            if (!typeInfo.IsPublic && !typeInfo.IsNotPublic)
+                return MemberTypes.NestedType;
+
+            return MemberTypes.TypeInfo;
+        } 
 
         public static ConstructorInfo GetConstructor(this Type type, Type[] types)
         {
