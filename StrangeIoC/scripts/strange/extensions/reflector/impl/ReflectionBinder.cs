@@ -28,299 +28,221 @@ using System.Collections.Generic;
 using System.Reflection;
 using strange.extensions.reflector.api;
 using strange.framework.api;
-using strange.framework.impl;
 using System.Collections;
-using System.Linq;
-using System.Reflection.Emit;
 
 namespace strange.extensions.reflector.impl
 {
+	public class ReflectionBinder : strange.framework.impl.Binder, IReflectionBinder
+	{
+		public ReflectionBinder ()
+		{
+		}
 
-    public class ReflectionBinder : strange.framework.impl.Binder, IReflectionBinder
-    {
-        public ReflectionBinder()
-        {
-        }
-        public IReflectedClass Get<T>()
-        {
-            return Get(typeof(T));
-        }
-        public IReflectedClass Get(Type type)
-        {
-            IBinding binding = GetBinding(type);
-            System.Diagnostics.Debug.WriteLine("Binding type: " +type.ToString());
-            IReflectedClass retv;
-            if (binding == null)
-            {
-                System.Diagnostics.Debug.WriteLine("Binding is null. ");
-                binding = GetRawBinding();
-                IReflectedClass reflected = new ReflectedClass();
-                mapPreferredConstructor(reflected, binding, type);
-                mapPostConstructors(reflected, binding, type);
-                mapSetters(reflected, binding, type);
-                binding.Bind(type).To(reflected);
-                retv = binding.value as IReflectedClass;
-                retv.PreGenerated = false;
-            }
-            else
-            {
-                retv = binding.value as IReflectedClass;
-                retv.PreGenerated = true;
-            }
-            return retv;
-        }
+		public IReflectedClass Get<T> ()
+		{
+			return Get (typeof(T));
+		}
 
-        public override IBinding GetRawBinding()
-        {
-            IBinding binding = base.GetRawBinding();
-            binding.valueConstraint = BindingConstraintType.ONE;
-            return binding;
-        }
+		public IReflectedClass Get (Type type)
+		{
+			IBinding binding = GetBinding(type);
+			IReflectedClass retv;
+			if (binding == null)
+			{
+				binding = GetRawBinding ();
+				IReflectedClass reflected = new ReflectedClass ();
+				mapPreferredConstructor (reflected, binding, type);
+				mapSetters (reflected, binding, type); //map setters before mapping methods
+				mapMethods (reflected, binding, type); 
+				binding.Bind (type).To (reflected);
+				retv = binding.value as IReflectedClass;
+				retv.PreGenerated = false;
+			}
+			else
+			{
+				retv = binding.value as IReflectedClass;
+				retv.PreGenerated = true;
+			}
+			return retv;
+		}
 
-        private void mapPreferredConstructor(IReflectedClass reflected, IBinding binding, Type type)
-        {
-            ConstructorInfo constructor = findPreferredConstructor(type);
-            if (constructor == null)
-            {
-                throw new ReflectionException("The reflector requires concrete classes.\nType " + type + " has no constructor. Is it an interface?", ReflectionExceptionType.CANNOT_REFLECT_INTERFACE);
-            }
-            ParameterInfo[] parameters = constructor.GetParameters();
+		public override IBinding GetRawBinding ()
+		{
+			IBinding binding = base.GetRawBinding ();
+			binding.valueConstraint = BindingConstraintType.ONE;
+			return binding;
+		}
 
-
-            Type[] paramList = new Type[parameters.Length];
-            object[] names = new object[parameters.Length];
-            int i = 0;
-            foreach (ParameterInfo param in parameters)
-            {
-                Type paramType = param.ParameterType;
-                paramList[i] = paramType;
-#if NETFX_CORE
-				object[] attributes = param.GetCustomAttributes(typeof(Name), false).ToArray();
-
-#else
-                object[] attributes = param.GetCustomAttributes(typeof(Name), false);
+		private void mapPreferredConstructor(IReflectedClass reflected, IBinding binding, Type type)
+		{
+			ConstructorInfo constructor = findPreferredConstructor (type);
+			if (constructor == null)
+			{
+				throw new ReflectionException("The reflector requires concrete classes.\nType " + type + " has no constructor. Is it an interface?", ReflectionExceptionType.CANNOT_REFLECT_INTERFACE);
+			}
+			ParameterInfo[] parameters = constructor.GetParameters();
 
 
-#endif
-                if (attributes.Length > 0)
-                {
-                    names[i] = ((Name)attributes[0]).name;
+			Type[] paramList = new Type[parameters.Length];
+			object[] names = new object[parameters.Length];
+			int i = 0;
+			foreach (ParameterInfo param in parameters)
+			{
+				Type paramType = param.ParameterType;
+				paramList [i] = paramType;
 
-                    System.Diagnostics.Debug.WriteLine("attributes: " + names[i].ToString());
-                }
-                i++;
-            }
-            reflected.Constructor = constructor;
-            reflected.ConstructorParameters = paramList;
-            reflected.ConstructorParameterNames = names;
-        }
+				object[] attributes = param.GetCustomAttributes(typeof(Name), false);
+				if (attributes.Length > 0) 
+				{
+					names[i] = ( (Name)attributes[0]).name;
+				}
+				i++;
+			}
+			reflected.Constructor = constructor;
+			reflected.ConstructorParameters = paramList;
+			reflected.ConstructorParameterNames = names;
+		}
 
-        //Look for a constructor in the order:
-        //1. Only one (just return it, since it's our only option)
-        //2. Tagged with [Construct] tag
-        //3. The constructor with the fewest parameters
-        private ConstructorInfo findPreferredConstructor(Type type)
-        {
-#if NETFX_CORE
+		//Look for a constructor in the order:
+		//1. Only one (just return it, since it's our only option)
+		//2. Tagged with [Construct] tag
+		//3. The constructor with the fewest parameters
+		private ConstructorInfo findPreferredConstructor(Type type)
+		{
+			ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy | 
+																	BindingFlags.Public | 
+																	BindingFlags.Instance |
+																	BindingFlags.InvokeMethod);
+			if (constructors.Length == 1)
+			{
+				return constructors [0];
+			}
+			int len;
+			int shortestLen = int.MaxValue;
+			ConstructorInfo shortestConstructor = null;
+			foreach (ConstructorInfo constructor in constructors)
+			{
+				object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
+				if (taggedConstructors.Length > 0)
+				{
+					return constructor;
+				}
+				len = constructor.GetParameters ().Length;
+				if (len < shortestLen)
+				{
+					shortestLen = len;
+					shortestConstructor = constructor;
+				}
+			}
+			return shortestConstructor;
+		}
 
-            BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod;
-            ConstructorInfo[] constructors = type.GetConstructors(flags);
+		private void mapMethods(IReflectedClass reflected, IBinding binding, Type type)
+		{
+			MethodInfo[] methods = type.GetMethods(BindingFlags.FlattenHierarchy | 
+														 BindingFlags.Public | 
+														 BindingFlags.Instance |
+														 BindingFlags.InvokeMethod);
+			ArrayList methodList = new ArrayList ();
+			List<KeyValuePair<MethodInfo, Attribute>> attrMethods = new List<KeyValuePair<MethodInfo, Attribute>>();
+			foreach (MethodInfo method in methods)
+			{
+				object[] tagged = method.GetCustomAttributes (typeof(PostConstruct), true);
+				if (tagged.Length > 0)
+				{
+					methodList.Add (method);
+					attrMethods.Add(new KeyValuePair<MethodInfo, Attribute>(method, (Attribute) tagged[0]));
+				}
+				object[] listensToAttr = method.GetCustomAttributes(typeof (ListensTo), true);
+				if (listensToAttr.Length > 0)
+				{
 
-#else
-            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.FlattenHierarchy |
-                                                                        BindingFlags.Public |
-                                                                        BindingFlags.Instance |
-                                                                        BindingFlags.InvokeMethod);
-#endif
-            if (constructors.Length == 1)
-            {
-                System.Diagnostics.Debug.WriteLine("constructors: " + constructors[0].ToString());
-                return constructors[0];
-            }
-            int len;
-            int shortestLen = int.MaxValue;
-            ConstructorInfo shortestConstructor = null;
-            foreach (ConstructorInfo constructor in constructors)
-            {
-                System.Diagnostics.Debug.WriteLine("constructor: " + constructor.ToString());
-#if NETFX_CORE
-                object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true).ToArray();;
-#else
-                object[] taggedConstructors = constructor.GetCustomAttributes(typeof(Construct), true);
+					for (int i = 0; i < listensToAttr.Length; i++)
+					{
+						attrMethods.Add(new KeyValuePair<MethodInfo, Attribute>(method, (ListensTo) listensToAttr[i]));
+					}
+				}
+			}
 
-#endif
-                if (taggedConstructors.Length > 0)
-                {
-                    System.Diagnostics.Debug.WriteLine("taggedconstructor: " + constructor.ToString());
-                    return constructor;
-                }
-                len = constructor.GetParameters().Length;
-                if (len < shortestLen)
-                {
-                    shortestLen = len;
-                    shortestConstructor = constructor;
-                }
-            }
-            return shortestConstructor;
-        }
+			methodList.Sort (new PriorityComparer ());
+			reflected.postConstructors = (MethodInfo[])methodList.ToArray(typeof(MethodInfo));
+		    reflected.attrMethods = attrMethods.ToArray();
+		}
 
-        private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
-        {
-#if NETFX_CORE
-            BindingFlags mflags = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod;
-            MethodInfo[] methods  = type.GetMethods(mflags);
-            //System.Diagnostics.Debug.WriteLine("methods: "+methodsquery.ToArray().GetValue(0).ToString());
+		private void mapSetters(IReflectedClass reflected, IBinding binding, Type type)
+		{
+			KeyValuePair<Type, PropertyInfo>[] pairs = new KeyValuePair<Type, PropertyInfo>[0];
+			object[] names = new object[0];
 
+			MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
+													BindingFlags.FlattenHierarchy |
+													BindingFlags.SetProperty |
+													BindingFlags.NonPublic |
+													BindingFlags.Instance,
+													null, null);
+			foreach (MemberInfo member in privateMembers)
+			{
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+				if (injections.Length > 0)
+				{
+					throw new ReflectionException ("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
+				}
+			}
 
-#else
-            MethodInfo[] methods = type.GetMethods(BindingFlags.FlattenHierarchy |
-                                                         BindingFlags.Public |
-                                                         BindingFlags.Instance |
-                                                         BindingFlags.InvokeMethod);
-#endif
-            ArrayList methodList = new ArrayList();
-            foreach (MethodInfo method in methods)
-            {
-#if NETFX_CORE
+			MemberInfo[] members = type.FindMembers(MemberTypes.Property,
+														  BindingFlags.FlattenHierarchy |
+														  BindingFlags.SetProperty |
+														  BindingFlags.Public |
+														  BindingFlags.Instance,
+														  null, null);
 
-                object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true).ToArray();
-#else
-                object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
+			foreach (MemberInfo member in members)
+			{
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+				if (injections.Length > 0)
+				{
+					Inject attr = injections [0] as Inject;
+					PropertyInfo point = member as PropertyInfo;
+					Type pointType = point.PropertyType;
+					KeyValuePair<Type, PropertyInfo> pair = new KeyValuePair<Type, PropertyInfo> (pointType, point);
+					pairs = AddKV (pair, pairs);
 
-#endif
-                if (tagged.Length > 0)
-                {
-                    System.Diagnostics.Debug.WriteLine("tagged: " + tagged);
-                    methodList.Add(method);
-                }
-            }
+					object bindingName = attr.name;
+					names = Add (bindingName, names);
+				}
+			}
+			reflected.Setters = pairs;
+			reflected.SetterNames = names;
+		}
 
-            methodList.Sort(new PriorityComparer());
-            MethodInfo[] postConstructors = (MethodInfo[])methodList.ToArray(typeof(MethodInfo));
-            reflected.postConstructors = postConstructors;
-        }
-
-#if NETFX_CORE
-        bool HasPublicGetter(PropertyInfo pi)
-        {
-            if (!pi.CanRead)
-                return false;
-            MethodInfo getter = pi.GetMethod;
-            return getter.IsPublic;
-        }
-#endif
-
-        private void mapSetters(IReflectedClass reflected, IBinding binding, Type type)
-        {
-            KeyValuePair<Type, PropertyInfo>[] pairs = new KeyValuePair<Type, PropertyInfo>[0];
-            object[] names = new object[0];
-
-#if NETFX_CORE
-            //System.Diagnostics.Debug.WriteLine("privatemembers: "+privateMembers.ToArray().GetValue(0).ToString());
-            BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.NonPublic | BindingFlags.Instance;
-            //MemberInfo[] privateMembers = TypeEx.GetProperties(type, flags);
-            MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property, flags);
-#else
-            MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
-                                                    BindingFlags.FlattenHierarchy |
-                                                    BindingFlags.SetProperty |
-                                                    BindingFlags.NonPublic |
-                                                    BindingFlags.Instance,
-                                                    null, null);
-#endif
-            foreach (MemberInfo member in privateMembers)
-            {
-
-#if NETFX_CORE
-                System.Diagnostics.Debug.WriteLine("members:" + member.ToString().PadRight(40) + "Type:" + TypeEx.GetMemberType(member));
-				object[] injections = member.GetCustomAttributes(typeof(Inject), true).ToArray();
-
-#else
-                object[] injections = member.GetCustomAttributes(typeof(Inject), true);
-#endif
-
-                if (injections.Length > 0)
-                {
-                    throw new ReflectionException("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
-                }
-
-            }
-
-#if NETFX_CORE
-            BindingFlags flags2 = BindingFlags.FlattenHierarchy | BindingFlags.SetProperty |BindingFlags.Public | BindingFlags.Instance;
-            //MemberInfo[] members = TypeEx.FindMembers(type, flags2);
-            //MemberInfo[] members = type.GetProperties(flags2);
-            MemberInfo[] members = type.FindMembers(MemberTypes.Property, flags2);
-#else
-            MemberInfo[] members = type.FindMembers(MemberTypes.Property,
-                                                          BindingFlags.FlattenHierarchy |
-                                                          BindingFlags.SetProperty |
-                                                          BindingFlags.Public |
-                                                          BindingFlags.Instance,
-                                                          null, null);
-
-#endif
-            foreach (MemberInfo member in members)
-            {
-
-#if NETFX_CORE
-                System.Diagnostics.Debug.WriteLine("members:" + member.ToString().PadRight(40) + "Type:" + TypeEx.GetMemberType(member));
-				object[] injections = member.GetCustomAttributes(typeof(Inject), true).ToArray();
-
-#else
-                object[] injections = member.GetCustomAttributes(typeof(Inject), true);
-#endif
-                if (injections.Length > 0)
-                {
-
-                    Inject attr = injections[0] as Inject;
-
-                    System.Diagnostics.Debug.WriteLine("injections: " + attr);
-                        PropertyInfo point = member as PropertyInfo;
-                        Type pointType = point.PropertyType;
-                        KeyValuePair<Type, PropertyInfo> pair = new KeyValuePair<Type, PropertyInfo>(pointType, point);
-                        pairs = AddKV(pair, pairs);
-
-                        object bindingName = attr.name;
-                        names = Add(bindingName, names);
-                 }
-                reflected.Setters = pairs;
-                reflected.SetterNames = names;
-            }
-        }
-
-        /**
+		/**
 		 * Add an item to a list
 		 */
-        private object[] Add(object value, object[] list)
-        {
-            object[] tempList = list;
-            int len = tempList.Length;
-            list = new object[len + 1];
-            tempList.CopyTo(list, 0);
-            list[len] = value;
-            return list;
-        }
+		private object[] Add(object value, object[] list)
+		{
+			object[] tempList = list;
+			int len = tempList.Length;
+			list = new object[len + 1];
+			tempList.CopyTo (list, 0);
+			list [len] = value;
+			return list;
+		}
 
-        /**
+		/**
 		 * Add an item to a list
 		 */
-        private KeyValuePair<Type, PropertyInfo>[] AddKV(KeyValuePair<Type, PropertyInfo> value, KeyValuePair<Type, PropertyInfo>[] list)
-        {
-            KeyValuePair<Type, PropertyInfo>[] tempList = list;
-            int len = tempList.Length;
-            list = new KeyValuePair<Type, PropertyInfo>[len + 1];
-            tempList.CopyTo(list, 0);
-            list[len] = value;
-            return list;
-        }
+		private  KeyValuePair<Type,PropertyInfo>[] AddKV(KeyValuePair<Type,PropertyInfo> value, KeyValuePair<Type,PropertyInfo>[] list)
+		{
+			KeyValuePair<Type,PropertyInfo>[] tempList = list;
+			int len = tempList.Length;
+			list = new KeyValuePair<Type,PropertyInfo>[len + 1];
+			tempList.CopyTo (list, 0);
+			list [len] = value;
+			return list;
+		}
+	}
 
-
-    }
-}
-namespace strange.extensions.reflector.impl
-{
-    class PriorityComparer : IComparer
+	class PriorityComparer : IComparer
 	{
 		int IComparer.Compare( Object x, Object y )
 		{
@@ -328,25 +250,15 @@ namespace strange.extensions.reflector.impl
 			int pX = getPriority (x as MethodInfo);
 			int pY = getPriority (y as MethodInfo);
 
-            return (pX < pY) ? -1 : (pX == pY) ? 0 : 1;
+			return (pX < pY) ? -1 : (pX == pY) ? 0 : 1;
 		}
 
 		private int getPriority(MethodInfo methodInfo)
 		{
-#if NETFX_CORE
-            //PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
-            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true).ToArray().OfType<PostConstruct>().FirstOrDefault<PostConstruct>();
-            System.Diagnostics.Debug.WriteLine("attr: " + attr.ToString());
-
-#else
-            PostConstruct attr = methodInfo.GetCustomAttributes(typeof(PostConstruct), true)[0] as PostConstruct;
-#endif
+			PostConstruct attr = methodInfo.GetCustomAttributes(true) [0] as PostConstruct;
 			int priority = attr.priority;
 			return priority;
 		}
-    }
+	}
 }
-
-
-
 

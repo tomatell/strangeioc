@@ -20,6 +20,11 @@ namespace System.Reflection
             return type.GetTypeInfo().Assembly;
         }
 
+        public static Assembly GetExecutingAssembly(this Type type)
+        {
+            return type.GetTypeInfo().Assembly;
+        }
+
         public static bool IsGenericType(this Type type)
         {
             return type.GetTypeInfo().IsGenericType;

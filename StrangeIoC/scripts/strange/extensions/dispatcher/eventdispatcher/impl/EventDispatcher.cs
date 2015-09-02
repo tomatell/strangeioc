@@ -35,7 +35,7 @@
 	* @see strange.extensions.dispatcher.api.ITriggerable
 	*/
 
-	using System;
+using System;
 using System.Collections.Generic;
 using strange.framework.api;
 using strange.framework.impl;
@@ -43,10 +43,11 @@ using strange.extensions.dispatcher.api;
 using strange.extensions.dispatcher.eventdispatcher.api;
 using strange.extensions.pool.api;
 using strange.extensions.pool.impl;
+using System.Reflection;
 
 namespace strange.extensions.dispatcher.eventdispatcher.impl
 {
-	public class EventDispatcher : Binder, IEventDispatcher, ITriggerProvider, ITriggerable
+	public class EventDispatcher : framework.impl.Binder, IEventDispatcher, ITriggerProvider, ITriggerable
 	{
 		/// The list of clients that will be triggered as a consequence of an Event firing.
 		protected HashSet<ITriggerable> triggerClients;
@@ -105,9 +106,8 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 					}
 					catch (Exception ex) //If trigger throws, we still want to cleanup!
 					{
-                        System.Diagnostics.Debug.WriteLine("EventDispatcher.trigger: " + trigger.ToString());
-                        internalReleaseEvent(evt);
-						throw;
+						internalReleaseEvent(evt);
+						throw (ex);
 					}
 					
 				}
@@ -212,11 +212,11 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			{
 				object tgt = callback.Target;
 #if NETFX_CORE
-				string methodName = System.Reflection.RuntimeReflectionExtensions.GetMethodInfo(callback as Delegate).Name;
+                string methodName = (callback as Delegate).GetMethodInfo().Name;
 #else
                 string methodName = (callback as Delegate).Method.Name;
 #endif
-				string message = "An EventCallback is attempting an illegal cast. One possible reason is not typing the payload to IEvent in your callback. Another is illegal casting of the data.\nTarget class: "  + tgt + " method: " + methodName;
+                string message = "An EventCallback is attempting an illegal cast. One possible reason is not typing the payload to IEvent in your callback. Another is illegal casting of the data.\nTarget class: "  + tgt + " method: " + methodName;
 				throw new EventDispatcherException (message, EventDispatcherExceptionType.TARGET_INVOCATION);
 			}
 		}

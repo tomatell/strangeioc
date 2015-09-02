@@ -15,7 +15,6 @@
  */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -38,24 +37,13 @@ namespace strange.extensions.implicitBind.impl
 
 
 		//Hold a copy of the assembly so we aren't retrieving this multiple times. 
-		private Assembly assembly;
+		public Assembly Assembly { get; set; }
 
 
 		[PostConstruct]
 		public void PostConstruct()
 		{
-#if NETFX_CORE
-
-            //assembly = GetType().GetTypeInfo().Assembly;
-            //assembly = typeof(ImplicitBinder).GetTypeInfo().Assembly;
-            assembly = TypeEx.Assembly(typeof(ImplicitBinder));
-            foreach (TypeInfo type in assembly.DefinedTypes)
-            {
-                //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
-            }
-#else
-            assembly = Assembly.GetExecutingAssembly();
-#endif
+			Assembly = Assembly.GetExecutingAssembly();
 		}
 
 		/// <summary>
@@ -64,16 +52,12 @@ namespace strange.extensions.implicitBind.impl
 		/// </summary>
 		/// <param name="usingNamespaces">Array of namespaces. Compared using StartsWith. </param>
 
-		public virtual void ScanForAnnotatedClasses(string[] usingNamespaces)
+		public virtual void ScanForAnnotatedClasses(params string[] usingNamespaces)
 		{
-			if (assembly != null)
+			if (Assembly != null)
 			{
 
-#if NETFX_CORE
-                IEnumerable<Type> types = assembly.GetType().GetTypeInfo().Assembly.ExportedTypes;
-#else
-                IEnumerable<Type> types = assembly.GetExportedTypes();
-#endif
+				IEnumerable<Type> types = Assembly.GetExportedTypes();
 
 				List<Type> typesInNamespaces = new List<Type>();
 				int namespacesLength = usingNamespaces.Length;
@@ -87,22 +71,10 @@ namespace strange.extensions.implicitBind.impl
 
 				foreach (Type type in typesInNamespaces)
 				{
-                    //System.Diagnostics.Debug.WriteLine("{0}", type.FullName);
-#if NETFX_CORE
-                    object[] implements = type.GetCustomAttributes(typeof (Implements), true);
-
-                    object[] implementedBy = type.GetCustomAttributes(typeof (ImplementedBy), true);
-
-                    object[] mediated = type.GetCustomAttributes(typeof (MediatedBy), true);
-
-                    object[] mediates = type.GetCustomAttributes(typeof (Mediates), true);
-
-#else
-                    object[] implements = type.GetCustomAttributes(typeof(Implements), true);
-                    object[] implementedBy = type.GetCustomAttributes(typeof(ImplementedBy), true);
-                    object[] mediated = type.GetCustomAttributes(typeof(MediatedBy), true);
-                    object[] mediates = type.GetCustomAttributes(typeof(Mediates), true);
-#endif
+					object[] implements = type.GetCustomAttributes(typeof (Implements), true);
+					object[] implementedBy = type.GetCustomAttributes(typeof(ImplementedBy), true);
+					object[] mediated = type.GetCustomAttributes(typeof(MediatedBy), true);
+					object[] mediates = type.GetCustomAttributes(typeof(Mediates), true);
 
 					#region Concrete and Interface Bindings
 
@@ -111,11 +83,7 @@ namespace strange.extensions.implicitBind.impl
 					{
 
 						ImplementedBy implBy = (ImplementedBy)implementedBy.First();
-#if NETFX_CORE
-						if (implBy.DefaultType.GetTypeInfo().ImplementedInterfaces.Contains(type)) //Verify this DefaultType exists and implements the tagged interface
-#else
-                        if (implBy.DefaultType.GetInterfaces().Contains(type)) //Verify this DefaultType exists and implements the tagged interface
-#endif
+						if (implBy.DefaultType.GetInterfaces().Contains(type)) //Verify this DefaultType exists and implements the tagged interface
 						{
 							implementedByBindings.Add(new ImplicitBindingVO(type, implBy.DefaultType, implBy.Scope == InjectionBindingScope.CROSS_CONTEXT, null));
 						}
@@ -129,12 +97,9 @@ namespace strange.extensions.implicitBind.impl
 
 					if (implements.Any())
 					{
-#if NETFX_CORE
-						Type[] interfaces = (type.GetTypeInfo().ImplementedInterfaces as Type[]);
-#else
-                        Type[] interfaces = type.GetInterfaces();
-#endif
-                        object name = null;
+						Type[] interfaces = type.GetInterfaces();
+						
+						object name = null;
 						bool isCrossContext = false;
 						List<Type> bindTypes = new List<Type>();
 
@@ -158,6 +123,7 @@ namespace strange.extensions.implicitBind.impl
 							{
 								bindTypes.Add(type);
 							}
+
 							isCrossContext = isCrossContext || impl.Scope == InjectionBindingScope.CROSS_CONTEXT;
 							name = name ?? impl.Name;
 						}
@@ -200,21 +166,10 @@ namespace strange.extensions.implicitBind.impl
 					#endregion
 				}
 
-#if NETFX_CORE
 				//implementedBy/interfaces first, then implements to give them priority (they will overwrite)
-                foreach (ImplicitBindingVO toBind in implementedByBindings)
-                {
-                    System.Diagnostics.Debug.WriteLine("ImplicitBindingVO toBind: " +toBind.ToString());
-                    Bind(toBind);
-                }
-
-
-#else
-                //implementedBy/interfaces first, then implements to give them priority (they will overwrite)
-                implementedByBindings.ForEach(Bind);
-                //Next implements tags, which have priority over interfaces
-                implementsBindings.ForEach(Bind);
-#endif
+				implementedByBindings.ForEach(Bind);
+				//Next implements tags, which have priority over interfaces
+				implementsBindings.ForEach(Bind);
 			}
 			else
 			{
@@ -228,7 +183,7 @@ namespace strange.extensions.implicitBind.impl
 			//Therefore, ImplementedBy will be overriden by an Implements to that interface.
 
 			IInjectionBinding binding = injectionBinder.Bind(toBind.BindTypes.First());
-			binding.Weak();//SDM2014-0120: added as part of cross-context implicit binding fix (moved from below)
+			binding.Weak();
 
 			for (int i = 1; i < toBind.BindTypes.Count; i++)
 			{
@@ -243,7 +198,6 @@ namespace strange.extensions.implicitBind.impl
 			if (toBind.IsCrossContext) //Bind this to the cross context injector
 				binding.CrossContext();
 
-			//binding.Weak();//SDM2014-0120: removed as part of cross-context implicit binding fix (moved up higher)
 		}
 
 		private sealed class ImplicitBindingVO

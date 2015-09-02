@@ -81,7 +81,6 @@ namespace strange.extensions.command.api
 		new ICommandBinding Bind(object value);
 
 		new ICommandBinding GetBinding<T>();
-
 	}
 }
 

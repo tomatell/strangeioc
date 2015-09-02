@@ -22,22 +22,13 @@
 
 using System;
 using strange.extensions.injector.api;
-using System.Reflection;
 
 namespace strange.extensions.injector.impl
 {
-    public static class chk
-    {
-#if NETFX_CORE
-        public static bool IsInstanceOfType(this Type type, object obj)
-        {
-            return obj != null && type.GetTypeInfo().IsAssignableFrom(obj.GetType().GetTypeInfo());
-        }
-#endif
-    }
 	public class InjectorFactory : IInjectorFactory
-    {
-        public InjectorFactory ()
+	{
+
+		public InjectorFactory ()
 		{
 		}
 
@@ -72,11 +63,7 @@ namespace strange.extensions.injector.impl
 		{
 			if (binding.value != null)
 			{
-#if NETFX_CORE
-				if (chk.IsInstanceOfType(typeof(Type), binding.value))
-#else
-                if (binding.value.GetType().IsInstanceOfType(typeof(Type)))
-#endif
+				if (binding.value.GetType().IsInstanceOfType(typeof(Type)))
 				{
 					object o = createFromValue (binding.value, args);
 					if (o == null)
@@ -98,11 +85,7 @@ namespace strange.extensions.injector.impl
 		protected object generateImplicit(object key, object[] args)
 		{
 			Type type = key as Type;
-#if NETFX_CORE
-			if (!type.GetTypeInfo().IsInterface && !type.GetTypeInfo().IsAbstract)
-#else
-            if (!type.IsInterface && !type.IsAbstract)
-#endif
+			if (!type.IsInterface && !type.IsAbstract)
 			{
 				return createFromValue(key, args);
 			}

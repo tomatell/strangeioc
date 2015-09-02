@@ -26,7 +26,6 @@ using System;
 using strange.framework.api;
 using strange.framework.impl;
 using strange.extensions.injector.api;
-using System.Reflection;
 
 namespace strange.extensions.injector.impl
 {
@@ -36,11 +35,14 @@ namespace strange.extensions.injector.impl
 		private bool _toInject = true;
 		private bool _isCrossContext = false;
 
-        public InjectionBinding(strange.framework.impl.Binder.BindingResolver resolver)
+		private ISemiBinding supplyList = new SemiBinding ();
+
+		public InjectionBinding (Binder.BindingResolver resolver)
 		{
 			this.resolver = resolver;
 			keyConstraint = BindingConstraintType.MANY;
 			valueConstraint = BindingConstraintType.ONE;
+			supplyList.constraint = BindingConstraintType.MANY;
 		}
 
 		public InjectionBindingType type
@@ -110,12 +112,7 @@ namespace strange.extensions.injector.impl
 			{
 				object aKey = keys[a];
 				Type keyType = (aKey is Type) ? aKey as Type : aKey.GetType();
-#if NETFX_CORE
-				//if (keyType.GetTypeInfo().IsAssignableFrom(objType.GetTypeInfo()) == false && (HasGenericAssignableFrom(keyType, objType) == false))
-                if (TypeEx.IsAssignableFrom(keyType, objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
-#else
-                if (keyType.IsAssignableFrom(objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
-#endif
+				if (keyType.IsAssignableFrom(objType) == false && (HasGenericAssignableFrom(keyType, objType) == false))
 				{
 					throw new InjectionException("Injection cannot bind a value that does not extend or implement the binding type.", InjectionExceptionType.ILLEGAL_BINDING_VALUE);
 				}
@@ -127,11 +124,7 @@ namespace strange.extensions.injector.impl
 		protected bool HasGenericAssignableFrom(Type keyType, Type objType)
 		{
 			//FIXME: We need to figure out how to determine generic assignability
-#if NETFX_CORE
-			if (keyType.GetTypeInfo().IsGenericType == false)
-#else
-            if (keyType.IsGenericType == false)
-#endif
+			if (keyType.IsGenericType == false)
 				return false;
 
 			return true;
@@ -139,39 +132,23 @@ namespace strange.extensions.injector.impl
 
 		protected bool IsGenericTypeAssignable(Type givenType, Type genericType)
 		{
-#if NETFX_CORE
-			var interfaceTypes = givenType.GetTypeInfo().ImplementedInterfaces;
-#else
-            var interfaceTypes = givenType.GetInterfaces();
-#endif
+			var interfaceTypes = givenType.GetInterfaces();
 
 			foreach (var it in interfaceTypes)
 			{
-#if NETFX_CORE
-				if (it.GetTypeInfo().IsGenericType && it.GetTypeInfo().GetGenericTypeDefinition() == genericType)
-#else
-                if (it.IsGenericType && it.GetGenericTypeDefinition() == genericType)
-#endif
+				if (it.IsGenericType && it.GetGenericTypeDefinition() == genericType)
 					return true;
 			}
 
-#if NETFX_CORE
-			if (givenType.GetTypeInfo().IsGenericType && givenType.GetTypeInfo().GetGenericTypeDefinition() == genericType)
-#else
-            if (givenType.IsGenericType && givenType.GetGenericTypeDefinition() == genericType)
-#endif
+			if (givenType.IsGenericType && givenType.GetGenericTypeDefinition() == genericType)
 				return true;
 
-#if NETFX_CORE
-			Type baseType = givenType.GetTypeInfo().BaseType;
-#else
-            Type baseType = givenType.BaseType;
-#endif
+			Type baseType = givenType.BaseType;
 			if (baseType == null) return false;
 
 			return IsGenericTypeAssignable(baseType, genericType);
 		}
-		
+
 		public IInjectionBinding CrossContext()
 		{
 			_isCrossContext = true;
@@ -180,6 +157,41 @@ namespace strange.extensions.injector.impl
 				resolver(this);
 			}
 			return this;
+		}
+
+		/// Promise this Binding to any instance of Type <T>
+		public IInjectionBinding SupplyTo<T>()
+		{
+			return SupplyTo (typeof (T));
+		}
+
+		/// Promise this Binding to any instance of Type type
+		public IInjectionBinding SupplyTo(Type type)
+		{
+			supplyList.Add (type);
+			if (resolver != null)
+			{
+				resolver(this);
+			}
+			return this;
+		}
+
+		/// Remove the promise to supply this binding to Type <T>
+		public IInjectionBinding Unsupply<T>()
+		{
+			return Unsupply (typeof (T));
+		}
+
+		/// Remove the promise to supply this binding to Type type
+		public IInjectionBinding Unsupply(Type type)
+		{
+			supplyList.Remove (type);
+			return this;
+		}
+
+		public object[] GetSupply()
+		{
+			return supplyList.value as object[];
 		}
 
 		new public IInjectionBinding Bind<T>()

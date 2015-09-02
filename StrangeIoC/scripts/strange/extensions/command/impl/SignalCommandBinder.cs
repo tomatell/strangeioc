@@ -124,22 +124,15 @@ namespace strange.extensions.command.impl
 						{
 							if (value != null)
 							{
-#if NETFX_CORE
-                                Type valuetype = value.GetType();
-								//if (type.GetTypeInfo().IsAssignableFrom(valuetype.GetTypeInfo())) //IsAssignableFrom lets us test interfaces as well
-                                if(TypeEx.IsAssignableFrom(type,value.GetType()))
-#else
-                                if (type.IsAssignableFrom(value.GetType())) //IsAssignableFrom lets us test interfaces as well
-
-#endif
-                                {
-                                    injectionBinder.Bind(type).ToValue(value).ToInject(false);
-                                    injectedTypes.Add(type);
-                                    values.Remove(value);
-                                    foundValue = true;
-                                    break;
-                                }
-                            }
+								if (type.IsAssignableFrom(value.GetType())) //IsAssignableFrom lets us test interfaces as well
+								{
+									injectionBinder.Bind(type).ToValue(value).ToInject(false);
+									injectedTypes.Add(type);
+									values.Remove(value);
+									foundValue = true;
+									break;
+								}
+							}
 							else //Do not allow null injections
 							{
 								throw new SignalException("SignalCommandBinder attempted to bind a null value from a signal to Command: " + cmd.GetType() + " to type: " + type, SignalExceptionType.COMMAND_NULL_INJECTION);
@@ -168,48 +161,32 @@ namespace strange.extensions.command.impl
 
 		override public ICommandBinding Bind<T>()
 		{
-            System.Diagnostics.Debug.WriteLine("Debugging.........................");
-            IInjectionBinding binding = null;
-            try {
+			IInjectionBinding binding = injectionBinder.GetBinding<T>();
+			if (binding == null) //If this isn't injected yet, inject a new one as a singleton
+			{
+				injectionBinder.Bind<T>().ToSingleton();
+			}
 
-                binding = injectionBinder.GetBinding<T>();
-                System.Diagnostics.Debug.WriteLine("Debugging.........................", binding);
-                if (binding == null) //If this isn't injected yet, inject a new one as a singleton
-                {
-                    injectionBinder.Bind<T>().ToSingleton();
-                }
-            }
-            catch (Exception e)
-            {
-
-                System.Diagnostics.Debug.WriteLine("Exception........................."+e+ "Binding........................."+binding);
-            }
-            T signal = (T)injectionBinder.GetInstance<T>();
-            
-            return base.Bind(signal);
+			T signal = (T)injectionBinder.GetInstance<T>();
+			return base.Bind(signal);
 		}
 
-        // Follow the same code of SignalCommandBinder.Bind<T> but do it manually since we are using Reflection.
-       /* override public ICommandBinding Bind(object value)
-        {
-            var type = value as Type;
-            if (type != null)
-            {
-                IInjectionBinding binding = injectionBinder.GetBinding(type);
-                //If this isn't injected yet, inject a new one as a singleton
-                if (binding == null)
-                {
-                    injectionBinder.Bind(type).ToSingleton();
-                }
+		override public ICommandBinding Bind(object value)
+		{
+			IInjectionBinding binding = injectionBinder.GetBinding(value);
+			IBaseSignal signal = null;
 
-                var signal = injectionBinder.GetInstance(type);
-                return base.Bind(signal);
-            }
-            else
-            {
-                return base.Bind(value);
-            }
-        }*/
+			if (value is Type)
+			{
+				if (binding == null) //If this isn't injected yet, inject a new one as a singleton
+				{
+					binding = injectionBinder.Bind (value) as IInjectionBinding;
+					binding.ToSingleton ();
+				}
+				signal = injectionBinder.GetInstance (value as Type) as IBaseSignal;
+			}
+			return base.Bind(signal ?? value);
+		}
 
 		/// <summary>Unbind by Signal Type</summary>
 		/// <exception cref="InjectionException">If there is no binding for this type.</exception>

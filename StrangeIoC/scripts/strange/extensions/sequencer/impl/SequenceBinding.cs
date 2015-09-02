@@ -25,7 +25,6 @@ using strange.extensions.command.impl;
 using strange.extensions.sequencer.api;
 using strange.framework.api;
 using strange.framework.impl;
-using System.Reflection;
 
 namespace strange.extensions.sequencer.impl
 {
@@ -37,8 +36,7 @@ namespace strange.extensions.sequencer.impl
 		{
 		}
 
-        public SequenceBinding(strange.framework.impl.Binder.BindingResolver resolver)
-            : base(resolver)
+		public SequenceBinding (Binder.BindingResolver resolver) : base(resolver)
 		{
 		}
 
@@ -70,11 +68,7 @@ namespace strange.extensions.sequencer.impl
 			Type sType = typeof(ISequenceCommand);
 
 
-#if NETFX_CORE
-			if (sType.GetTypeInfo().IsAssignableFrom(oType.GetTypeInfo()) == false)
-#else
-            if (sType.IsAssignableFrom(oType) == false)
-#endif
+			if (sType.IsAssignableFrom(oType) == false)
 			{
 				throw new SequencerException ("Attempt to bind a non SequenceCommand to a Sequence. Perhaps your command needs to extend SequenceCommand or implement ISequenCommand?\n\tType: " + oType.ToString(), SequencerExceptionType.COMMAND_USED_IN_SEQUENCE);
 			}

@@ -19,25 +19,28 @@
  * 
  * Subclass of Binding for MediationBinding.
  * 
- * I've provided MediationBinding, but at present it comforms
- * perfectly to Binding.
+ * MediationBindings support the following extensions of standard Bindings:
+ *
+ * ToMediator - Porcelain for To<T> providing a little extra clarity and security.
+ *
+ * ToAbstraction<T> - Provide an Interface or base Class adapter for the View.
+ * When the binding specifies ToAbstraction<T>, the Mediator will be expected to inject <T>
+ * instead of the concrete View class.
  */
 
 using System;
 using strange.extensions.mediation.api;
 using strange.framework.impl;
 using strange.framework.api;
-using System.Reflection;
 
 namespace strange.extensions.mediation.impl
 {
-	public class MediationBinding : strange.framework.impl.Binding, IMediationBinding
+	public class MediationBinding : Binding, IMediationBinding
 	{
 		protected ISemiBinding _abstraction;
 
 
-        public MediationBinding(strange.framework.impl.Binder.BindingResolver resolver)
-            : base(resolver)
+		public MediationBinding (Binder.BindingResolver resolver) : base(resolver)
 		{
 			_abstraction = new SemiBinding ();
 			_abstraction.constraint = BindingConstraintType.ONE;
@@ -50,16 +53,17 @@ namespace strange.extensions.mediation.impl
 
 		IMediationBinding IMediationBinding.ToAbstraction<T> ()
 		{
-			Type abstractionType = typeof(T);
+			return ((IMediationBinding)this).ToAbstraction(typeof (T));
+		}
+
+		IMediationBinding IMediationBinding.ToAbstraction (Type t)
+		{
+			Type abstractionType = t;
 			if (key != null)
 			{
 				Type keyType = key as Type;
-#if NETFX_CORE
-				if (abstractionType.GetTypeInfo().IsAssignableFrom(keyType.GetTypeInfo()) == false)
-#else
-                if (abstractionType.IsAssignableFrom(keyType) == false)
-#endif
-					throw new MediationException ("The View " + key.ToString() + " has been bound to the abstraction " + typeof(T).ToString() + " which the View neither extends nor implements. " , MediationExceptionType.VIEW_NOT_ASSIGNABLE);
+				if (abstractionType.IsAssignableFrom(keyType) == false)
+					throw new MediationException ("The View " + key.ToString() + " has been bound to the abstraction " + t.ToString() + " which the View neither extends nor implements. " , MediationExceptionType.VIEW_NOT_ASSIGNABLE);
 			}
 			_abstraction.Add (abstractionType);
 			return this;
